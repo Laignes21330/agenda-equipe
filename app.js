@@ -1,5 +1,5 @@
 (function () {
-  var HH = 60, H0 = 7, H1 = 21;
+  var HH = 60, H0 = 7, H1 = 24, TOP = 10, LEFT = 64;
   var COLORS = window.AGENDA_COLORS;
   var $ = function (id) { return document.getElementById(id); };
   var pad = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -11,7 +11,7 @@
   var monday = function (d) { var x = new Date(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
   var fmt = function (d, o) { return d.toLocaleDateString('fr-FR', o); };
 
-  var users = [], events = [], selected = {}, view = (window.innerWidth < 700 ? 'day' : 'week'), cursor = ds(new Date()), editing = null, busy = false, saving = false;
+  var users = [], events = [], selected = {}, view = (window.innerWidth < 700 ? 'day' : 'week'), cursor = ds(new Date()), editing = null, allMode = true;
 
   var EVT = 'evt';
   function prefix(ids) {
@@ -37,25 +37,64 @@
   var uById = function (id) { for (var i = 0; i < users.length; i++) if (users[i].id === id) return users[i]; return null; };
 
   function showError(e) { var b = $('banner'); b.textContent = e ? (e.message || String(e)) : ''; b.hidden = !e; }
-  function run(p) { showError(null); return p.catch(function (e) { showError(e); throw e; }); }
+  function run(p) { showError(null); return p.catch(function (e) { if (!(e && e.auth)) showError(e); throw e; }); }
 
   function range() {
     var c = pd(cursor);
     if (view === 'day') return [c, c];
     var m = monday(c); return [m, addDays(m, 6)];
   }
+  /* Données en mémoire : une fenêtre de ±3 semaines autour de la période affichée.
+     Changer de semaine ne demande rien au service tant qu'on reste dans la fenêtre ; les rendez-vous créés,
+     modifiés ou supprimés s'affichent aussitôt et sont envoyés en arrière-plan. */
+  var win = null, gen = 0, pending = 0, loading = 0, refreshing = false, autoScroll = false;
+  function busy() {
+    var el = $('sync'); if (!el) return;
+    el.hidden = !(pending || loading);
+    el.textContent = pending ? 'Enregistrement…' : 'Chargement…';
+  }
+  function covered(r) { return !!win && win.from <= ds(r[0]) && win.to >= ds(r[1]); }
+  function fetchWin(r) {
+    var from = ds(addDays(r[0], -21)), to = ds(addDays(r[1], 21));
+    return store.list(from, to).then(function (list) { return { from: from, to: to, events: users.length ? list.map(legacy) : list, t: Date.now() }; });
+  }
+  function upsert(e) {
+    var found = false;
+    win.events = win.events.map(function (x) { if (x.id === e.id) { found = true; return e; } return x; });
+    if (!found) win.events.push(e);
+  }
+  function refresh() {
+    if (refreshing || pending || !win) return;
+    refreshing = true; var g = gen;
+    fetchWin(range()).then(function (w) {
+      refreshing = false;
+      if (g !== gen || pending) return;
+      var changed = JSON.stringify(w.events) !== JSON.stringify(win.events);
+      win = w; if (changed) { events = win.events; render(); }
+    }, function (e) { refreshing = false; if (e && e.auth) gate(); });
+  }
   function reload() {
     var r = range();
-    return run(store.list(ds(r[0]), ds(r[1]))).then(function (list) { events = list.map(legacy); render(); }, function () { render(); });
+    if (covered(r)) {
+      events = win.events; autoScroll = true; render();
+      var edge = ds(addDays(r[1], 7)) > win.to || ds(addDays(r[0], -7)) < win.from;
+      if (edge || Date.now() - win.t > 30000) refresh();
+      return Promise.resolve();
+    }
+    events = win ? win.events : []; render();
+    loading++; busy(); var g = ++gen;
+    return run(fetchWin(r)).then(function (w) { loading--; busy(); if (g === gen) { win = w; events = win.events; autoScroll = true; render(); } },
+      function (e) { loading--; busy(); if (e && e.auth) gate(); render(); });
   }
+  setInterval(function () { if (!document.hidden && !$('main').hidden) refresh(); }, 120000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && !$('main').hidden) refresh(); });
 
   function renderFilters() {
-    var all = users.length && users.every(function (u) { return selected[u.id]; });
-    var h = '<span class="lbl">Afficher</span><button type="button" class="chip all" data-all="1" aria-pressed="' + !!all + '">Tous</button>';
+    var h = '<span class="lbl">Afficher</span><button type="button" class="chip all" data-all="1" aria-pressed="' + allMode + '">Tous</button>';
     users.forEach(function (u) {
-      h += '<button type="button" class="chip" data-u="' + u.id + '" style="--c:' + u.c + '" aria-pressed="' + !!selected[u.id] + '" title="' + esc(u.name) + '"><span class="dot"></span>' + esc(u.ini) + '</button>';
+      h += '<button type="button" class="chip" data-u="' + u.id + '" style="--c:' + u.c + '" aria-pressed="' + (!allMode && !!selected[u.id]) + '" title="' + esc(u.name) + '"><span class="dot"></span>' + esc(u.ini) + '</button>';
     });
-    $('filters').innerHTML = h;
+    $('filters').innerHTML = h; $('filters').classList.toggle('allmode', allMode);
   }
 
   /* Couleur d'un rendez-vous : une seule personne = sa couleur, plusieurs = bandes obliques de largeur fixe */
@@ -107,7 +146,7 @@
     if (view === 'day') $('range').textContent = fmt(days[0], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     else $('range').textContent = fmt(days[0], { day: 'numeric', month: 'short' }) + ' – ' + fmt(days[6], { day: 'numeric', month: 'short', year: 'numeric' });
     var span = H1 - H0, today = ds(new Date()), g = $('grid');
-    var colW = Math.max(150, ($('scroller').clientWidth - 52) / days.length);
+    var colW = Math.max(150, ($('scroller').clientWidth - LEFT) / days.length);
     g.style.setProperty('--n', days.length); g.style.setProperty('--hh', HH + 'px'); g.style.setProperty('--span', span);
     var h = '<div class="gh"></div>';
     days.forEach(function (x) { h += '<div class="gh' + (ds(x) === today ? ' today' : '') + '">' + fmt(x, { weekday: 'short' }) + '<b>' + x.getDate() + '</b></div>'; });
@@ -122,40 +161,69 @@
       h += '</div>';
     });
     h += '<div class="hours">';
-    for (var k = H0; k <= H1; k++) h += '<span style="top:' + ((k - H0) * HH) + 'px">' + pad(k) + ':00</span>';
+    for (var k = H0; k <= H1; k++) h += '<span style="top:' + ((k - H0) * HH + TOP) + 'px">' + pad(k % 24) + ':00</span>';
     h += '</div>';
     days.forEach(function (x) {
       var key = ds(x);
       var list = events.filter(function (e) { return !e.allDay && e.date === key && visible(e); });
       h += '<div class="col' + (key === today ? ' today' : '') + '" data-date="' + key + '">';
+      h += '<div class="band mid" style="top:' + ((12 - H0) * HH + TOP) + 'px;height:' + (2 * HH) + 'px"></div><div class="band soir" style="top:' + ((19 - H0) * HH + TOP) + 'px;height:' + (2 * HH) + 'px"></div>';
       layout(list).forEach(function (e) {
         var s = Math.max(mins(e.start), H0 * 60), en = Math.min(mins(e.end), H1 * 60);
-        var top = (s - H0 * 60) / 60 * HH, ht = Math.max((en - s) / 60 * HH, 24) - 1;
+        var top = (s - H0 * 60) / 60 * HH + TOP, ht = Math.max((en - s) / 60 * HH, 24) - 1;
         var p = paint(e), n = e._n, side = n <= 2 || view === 'day' || colW / n >= 110, W = side ? 100 / n : 70, L = side ? e._col * W : e._col * (30 / (n - 1));
-        h += '<button type="button" class="ev' + p.cls + '" data-id="' + esc(e.id) + '" title="' + esc(evText(e)) + '" style="' + p.style + 'top:' + top + 'px;--h:' + ht + 'px;z-index:' + (2 + e._col) + ';left:calc(' + L + '% + 2px);width:calc(' + W + '% - 4px)">' +
+        h += '<button type="button" class="ev' + p.cls + (e.pending ? ' pending' : '') + '" data-id="' + esc(e.id) + '" title="' + esc(evText(e)) + '" style="' + p.style + 'top:' + top + 'px;--h:' + ht + 'px;z-index:' + (2 + e._col) + ';left:calc(' + L + '% + 2px);width:calc(' + W + '% - 4px)">' +
           '<div class="t">' + esc(prefix(e.parts) + e.title) + '</div><div class="h">' + e.start + '–' + e.end + '</div>' +
           (e.location && ht >= 58 ? '<div class="loc">' + esc(e.location) + '</div>' : '') + '</button>';
       });
       if (key === today) {
         var now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
-        if (nm >= H0 * 60 && nm <= H1 * 60) h += '<div class="now" style="top:' + ((nm - H0 * 60) / 60 * HH) + 'px"></div>';
+        if (nm >= H0 * 60 && nm <= H1 * 60) h += '<div class="now" style="top:' + ((nm - H0 * 60) / 60 * HH + TOP) + 'px"></div>';
       }
       h += '</div>';
     });
+    var sc = $('scroller'), keep = sc.scrollTop;
     g.innerHTML = h;
+    fit(); sc.scrollTop = keep;
+    if (autoScroll) {
+      autoScroll = false;
+      /* à l'ouverture d'une période, le planning se place sur le premier rendez-vous (par exemple 18 h pour une commission) */
+      var first = null;
+      events.forEach(function (e) { if (!e.allDay && visible(e) && e.date >= ds(r[0]) && e.date <= ds(r[1])) { var m = mins(e.start); if (first === null || m < first) first = m; } });
+      sc.scrollTop = first === null ? 0 : Math.max(0, (first - 30 - H0 * 60) / 60 * HH);
+    }
   }
+  /* Le planning occupe la hauteur de l'écran et défile à l'intérieur : l'entête (jours + journée entière) reste figée. */
+  function fit() {
+    var g = $('grid'), ghh = 0;
+    Array.prototype.forEach.call(g.querySelectorAll('.gh'), function (c) { ghh = Math.max(ghh, c.getBoundingClientRect().height); });
+    g.style.setProperty('--ghh', (ghh || 52) + 'px');
+    var sc = $('scroller'), top = sc.getBoundingClientRect().top + window.pageYOffset;
+    sc.style.maxHeight = Math.max(360, window.innerHeight - top - 62) + 'px';
+  }
+  window.addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  if (window.ResizeObserver) new ResizeObserver(fit).observe($('grid'));
 
   function shift(n) { cursor = ds(addDays(pd(cursor), view === 'day' ? n : n * 7)); reload(); }
   $('prev').onclick = function () { shift(-1); };
   $('next').onclick = function () { shift(1); };
   $('today').onclick = function () { cursor = ds(new Date()); reload(); };
-  $('goto').onchange = function () { if (this.value) { cursor = this.value; reload(); } };
+  $('goto').onchange = function () {
+    var y = +String(this.value).slice(0, 4);
+    if (this.value && y >= 2000 && y <= 2100) { cursor = this.value; reload(); }
+  };
   $('v-day').onclick = function () { view = 'day'; reload(); };
   $('v-week').onclick = function () { view = 'week'; reload(); };
   $('filters').onclick = function (e) {
     var b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.all) { var all = users.every(function (u) { return selected[u.id]; }); users.forEach(function (u) { selected[u.id] = !all; }); }
-    else selected[b.dataset.u] = !selected[b.dataset.u];
+    /* un clic sur une personne n'affiche que ses rendez-vous ; d'autres clics ajoutent ou retirent des personnes ; « Tous » rétablit l'ensemble */
+    if (b.dataset.all) { allMode = true; users.forEach(function (u) { selected[u.id] = true; }); }
+    else if (allMode) { allMode = false; users.forEach(function (u) { selected[u.id] = false; }); selected[b.dataset.u] = true; }
+    else {
+      selected[b.dataset.u] = !selected[b.dataset.u];
+      if (!users.some(function (u) { return selected[u.id]; })) { allMode = true; users.forEach(function (u) { selected[u.id] = true; }); }
+    }
     render();
   };
 
@@ -202,7 +270,16 @@
   $('f-title').oninput = updatePreview;
   $('ev-del').onclick = function () {
     if (!$('ev-del').dataset.arm) { $('ev-del').dataset.arm = '1'; $('ev-del').textContent = 'Confirmer la suppression'; return; }
-    run(store.remove(editing)).then(function () { closeEv(); return reload(); }, function (e) { $('ev-err').textContent = e.message; });
+    var id = editing, prev = win ? win.events.slice() : null;
+    closeEv(); gen++;
+    if (win) { win.events = win.events.filter(function (x) { return x.id !== id; }); events = win.events; render(); }
+    pending++; busy();
+    store.remove(id).then(function () { pending--; busy(); refresh(); }, function (e) {
+      pending--; busy(); gen++;
+      if (e && e.auth) { gate(); return; }
+      if (prev && win) { win.events = prev; events = prev; render(); }
+      showError(new Error('Suppression non effectuée : ' + e.message));
+    });
   };
   $('f-allday').onchange = syncAllDay;
   $('form-ev').onsubmit = function (e) {
@@ -217,17 +294,29 @@
     else if (!ad && mins(en) <= mins(s)) err = 'L\'heure de fin doit être après l\'heure de début.';
     $('ev-err').textContent = err; if (err) return;
     var rec = { id: editing, parts: ids, title: t, date: dt, allDay: ad, endDate: ad ? d2 : '', start: ad ? '' : s, end: ad ? '' : en, location: $('f-loc').value.trim(), notes: $('f-notes').value.trim() };
-    if (saving) return;
-    saving = true; $('ev-save').disabled = true; $('ev-save').textContent = 'Enregistrement…';
-    function done() { saving = false; $('ev-save').disabled = false; $('ev-save').textContent = 'Enregistrer'; }
-    run(store.save(rec)).then(function () { done(); closeEv(); cursor = dt; return reload(); }, function (x) { done(); $('ev-err').textContent = x.message; });
+    /* affichage immédiat, envoi au service en arrière-plan */
+    var tmp = Object.assign({}, rec, { pending: true }), tmpId = rec.id || ('tmp-' + Date.now());
+    tmp.id = tmpId; closeEv(); cursor = dt; gen++;
+    var r = range(), ok = covered(r), prev = ok ? win.events.slice() : null;
+    if (ok) { upsert(tmp); events = win.events; render(); } else reload();
+    pending++; busy();
+    store.save(rec).then(function (saved) {
+      pending--; gen++;
+      if (win) { win.events = win.events.filter(function (x) { return x.id !== tmpId; }); upsert(saved); events = win.events; render(); }
+      busy(); refresh();
+    }, function (x) {
+      pending--; gen++; busy();
+      if (x && x.auth) { gate(); return; }
+      if (prev && win) { win.events = prev; events = prev; render(); }
+      showError(new Error('Rendez-vous non enregistré : ' + x.message + ' Vérifiez l\'agenda et recommencez.'));
+    });
   };
   $('grid').onclick = function (e) {
     var ev = e.target.closest('.ev, .adev');
-    if (ev) { var f = events.filter(function (x) { return x.id === ev.dataset.id; })[0]; if (f) openEv(f); return; }
+    if (ev) { var f = events.filter(function (x) { return x.id === ev.dataset.id; })[0]; if (f && f.pending) { showError(new Error('Enregistrement en cours : patientez quelques secondes.')); return; } if (f) openEv(f); return; }
     var ad = e.target.closest('.ad'); if (ad) { openEv(null, ad.dataset.date); $('f-allday').checked = true; syncAllDay(); return; }
     var col = e.target.closest('.col'); if (!col) return;
-    var y = e.clientY - col.getBoundingClientRect().top;
+    var y = e.clientY - col.getBoundingClientRect().top - TOP; if (y < 0) y = 0;
     var m = Math.round((H0 * 60 + y / HH * 60) / 30) * 30;
     openEv(null, col.dataset.date, pad(Math.floor(m / 60)) + ':' + pad(m % 60));
   };
@@ -255,12 +344,15 @@
     $('login').hidden = true; $('main').hidden = false;
     $('btn-out').hidden = store.mode !== 'script';
     $('status').textContent = store.mode === 'script' ? 'Commune de Laignes' : 'Mode démo · données gardées dans ce navigateur';
-    return run(store.loadUsers()).then(function (u) {
-      users = u; users.forEach(function (x) { selected[x.id] = true; });
-      return reload();
-    });
+    var g = ++gen; loading++; busy();
+    return run(Promise.all([store.loadUsers(), fetchWin(range())])).then(function (res) {
+      loading--; busy();
+      users = res[0]; users.forEach(function (x) { selected[x.id] = true; });
+      win = res[1]; win.events = win.events.map(legacy); events = win.events; autoScroll = true; render();
+    }, function (e) { loading--; busy(); if (e && e.auth) gate(); });
   }
   function gate() {
+    win = null; events = [];
     $('main').hidden = true; $('login').hidden = false; $('btn-out').hidden = true; $('status').textContent = 'Non connecté';
   }
   $('form-in').onsubmit = function (e) {

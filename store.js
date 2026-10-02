@@ -58,34 +58,32 @@
   /* ---------- Mode équipe : service Apps Script rattaché au compte de la mairie ---------- */
   function scriptStore(prefixFn) {
     var KEY = 'agenda.code';
-    var code = '';
+    var code = '', cachedUsers = null;
     try { code = localStorage.getItem(KEY) || ''; } catch (e) {}
     function call(action, payload) {
       return fetch(CFG.scriptUrl, { method: 'POST', body: JSON.stringify(Object.assign({ action: action, code: code }, payload || {})) })
         .then(function (r) { return r.text(); }, function () { throw new Error('Connexion impossible. Vérifiez votre accès à internet, puis réessayez.'); })
         .then(function (t) {
           var j; try { j = JSON.parse(t); } catch (e) { throw new Error('Le service d\'agenda ne répond pas. Réessayez dans un instant.'); }
-          if (!j.ok) throw new Error(j.error || 'Erreur du service d\'agenda.');
+          if (!j.ok) {
+            var err = new Error(j.error || 'Erreur du service d\'agenda.');
+            if (/Code d.acc/.test(err.message)) { forget(); err.auth = true; }
+            throw err;
+          }
           return j.data;
         });
     }
     function forget() { code = ''; try { localStorage.removeItem(KEY); } catch (e) {} }
     return {
       mode: 'script',
-      init: function () {
-        if (!code) return Promise.resolve({ needsLogin: true });
-        return call('users').then(function () { return { needsLogin: false }; }, function (e) {
-          if (/Code d.acc/.test(e.message)) forget();
-          return { needsLogin: true };
-        });
-      },
+      init: function () { return Promise.resolve({ needsLogin: !code }); },
       signIn: function (entered) {
         code = String(entered || '').trim();
         if (!code) return Promise.reject(new Error('Saisissez le code d\'accès.'));
-        return call('users').then(function () { try { localStorage.setItem(KEY, code); } catch (e) {} }, function (e) { forget(); throw e; });
+        return call('users').then(function (u) { cachedUsers = u; try { localStorage.setItem(KEY, code); } catch (e) {} }, function (e) { forget(); throw e; });
       },
       signOut: function () { forget(); return Promise.resolve(); },
-      loadUsers: function () { return call('users'); },
+      loadUsers: function () { if (cachedUsers) { var u = cachedUsers; cachedUsers = null; return Promise.resolve(u); } return call('users'); },
       saveUsers: function (u) { return call('saveUsers', { users: u }).then(function () {}); },
       list: function (from, to) { return call('list', { from: from, to: to }); },
       save: function (ev) {
