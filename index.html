@@ -6,6 +6,10 @@
 <title>Agenda d'équipe</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0f6b66">
 </head>
 <body>
 <div class="app">
@@ -22,7 +26,7 @@
   </header>
 
   <div class="banner error" id="banner" hidden role="alert"></div>
-  <div class="login" id="login" hidden><div class="box"><h2>Agenda d'équipe</h2><p>Connectez-vous avec votre compte Google pour afficher et modifier l'agenda partagé.</p><button class="btn primary" id="btn-in" type="button">Se connecter avec Google</button></div></div>
+  <div class="login" id="login" hidden><form class="box" id="form-in" novalidate><h2>Agenda d'équipe</h2><p>Saisissez le code d'accès de l'équipe pour afficher et modifier l'agenda de la commune.</p><div class="field" style="width:100%;text-align:left"><label for="in-code">Code d'accès</label><input type="password" id="in-code" autocomplete="current-password"></div><div class="err" id="in-err" role="alert"></div><button class="btn primary" id="btn-in" type="submit">Entrer</button></form></div>
   <div id="main">
   <div class="bar">
     <div class="seg" role="group" aria-label="Vue">
@@ -50,11 +54,14 @@
     <div class="field"><span class="l">Participants</span><div class="parts" id="parts"></div></div>
     <div class="field"><label for="f-title">Titre</label><input type="text" id="f-title" autocomplete="off" placeholder="Ex. Commission finances"></div>
     <div class="field"><span class="l">Titre dans l'agenda</span><div class="preview ph" id="preview">Cochez des participants et saisissez un titre</div></div>
+    <label class="check"><input type="checkbox" id="f-allday"> Toute la journée</label>
     <div class="row">
       <div class="field"><label for="f-date">Date</label><input type="date" id="f-date"></div>
-      <div class="field"><label for="f-start">Début</label><input type="time" id="f-start" step="900"></div>
-      <div class="field"><label for="f-end">Fin</label><input type="time" id="f-end" step="900"></div>
+      <div class="field" id="w-date2" hidden><label for="f-date2">Jusqu'au (inclus)</label><input type="date" id="f-date2"></div>
+      <div class="field" id="w-start"><label for="f-start">Début</label><input type="time" id="f-start" step="900"></div>
+      <div class="field" id="w-end"><label for="f-end">Fin</label><input type="time" id="f-end" step="900"></div>
     </div>
+    <div class="field"><label for="f-loc">Lieu</label><input type="text" id="f-loc" autocomplete="off" placeholder="Ex. Mairie, salle du conseil"></div>
     <div class="field"><label for="f-notes">Commentaires</label><textarea id="f-notes"></textarea></div>
     <div class="err" id="ev-err" role="alert"></div>
     <div class="actions">

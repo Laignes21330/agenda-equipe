@@ -109,3 +109,22 @@ textarea { resize: vertical; min-height: 84px; }
 .login p{color:var(--muted);margin:0}
 .banner{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 12px;font-size:.85rem;color:var(--muted)}
 .banner.error{border-color:var(--danger);color:var(--danger)}
+
+/* Cases à cocher, journée entière, chevauchements, couleurs */
+.check{display:inline-flex;align-items:center;gap:8px;font-weight:500;cursor:pointer}
+.check input{accent-color:var(--accent);width:18px;height:18px}
+.chip .dot{width:14px;height:14px;font-size:0}
+.grid{min-width:calc(52px + var(--n) * 150px)}
+.adl,.ad{border-bottom:1px solid var(--line);padding:3px;min-height:32px}
+.adl{font-size:.68rem;color:var(--muted);text-align:right;padding-right:8px;display:flex;align-items:center;justify-content:flex-end}
+.ad{border-left:1px solid var(--line);display:flex;flex-direction:column;gap:3px;min-width:0}
+.adev{border:0;border-radius:4px;padding:3px 6px;text-align:left;color:var(--fg);cursor:pointer;display:block;width:100%;min-width:0}
+.adev .t{font-weight:600;font-size:.78rem;line-height:1.25;overflow-wrap:anywhere}
+.adev .h{font-size:.68rem;color:var(--muted)}
+.ev{height:var(--h);border-left:0}
+.ev .loc{font-size:.68rem;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev:hover,.ev:focus-visible{z-index:6;left:2px!important;width:calc(100% - 4px)!important;height:auto;min-height:var(--h);box-shadow:0 4px 14px rgba(0,0,0,.28);overflow:visible}
+.multi .t{background:color-mix(in srgb,var(--surface) 62%,transparent);border-radius:3px;padding:0 3px;display:inline}
+.ev.ext,.adev.ext{background:color-mix(in srgb,var(--muted) 22%,var(--surface))}
+
+.ev{box-shadow:0 0 0 1px var(--surface)}

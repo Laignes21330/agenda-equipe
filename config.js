@@ -1,6 +1,7 @@
+/* Réglages de l'application.
+   scriptUrl : adresse du service Apps Script (compte de la mairie).
+   Laissée vide, l'application tourne en mode démo (données gardées dans le navigateur). */
 window.AGENDA_CONFIG = {
-  clientId: "34502010093-17ovjn29ap6e1n68af8h64cr01dgp1jr.apps.googleusercontent.com",
-  calendarId: "agenda21330@gmail.com",
-  timeZone: "Europe/Paris",
+  scriptUrl: "https://script.google.com/macros/s/AKfycbx1lviKG7G4r7oJ0KvqBsQWp_ovRQG3cNLxdnw9iCxnievq8N5AjBRWEr8HAzzEpJTunA/exec",
   appName: "Agenda d'équipe"
 };
