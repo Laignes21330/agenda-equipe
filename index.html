@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agenda d'équipe</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <h1>Agenda d'équipe</h1>
+      <div class="status" id="status"></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btn-person" type="button">Gérer l'équipe</button>
+      <button class="btn" id="btn-out" type="button" hidden>Se déconnecter</button>
+      <button class="btn primary" id="btn-new" type="button">+ Rendez-vous</button>
+    </div>
+  </header>
+
+  <div class="banner error" id="banner" hidden role="alert"></div>
+  <div class="login" id="login" hidden><div class="box"><h2>Agenda d'équipe</h2><p>Connectez-vous avec votre compte Google pour afficher et modifier l'agenda partagé.</p><button class="btn primary" id="btn-in" type="button">Se connecter avec Google</button></div></div>
+  <div id="main">
+  <div class="bar">
+    <div class="seg" role="group" aria-label="Vue">
+      <button type="button" id="v-day" aria-pressed="false">Jour</button>
+      <button type="button" id="v-week" aria-pressed="true">Semaine</button>
+    </div>
+    <div class="nav">
+      <button class="btn" id="prev" type="button" aria-label="Précédent">‹</button>
+      <button class="btn" id="today" type="button">Aujourd'hui</button>
+      <button class="btn" id="next" type="button" aria-label="Suivant">›</button>
+    </div>
+    <div class="range" id="range"></div>
+  </div>
+
+  <div class="filters" id="filters" aria-label="Filtrer par personne"></div>
+
+  <div class="board"><div class="scroller" id="scroller"><div class="grid" id="grid"></div></div></div>
+  <div class="foot">Cliquez sur un créneau vide pour créer un rendez-vous, ou sur un rendez-vous pour le modifier.</div>
+  </div>
+</div>
+
+<div class="veil" id="veil-ev" hidden>
+  <form class="sheet" id="form-ev" novalidate>
+    <h2 id="ev-h">Nouveau rendez-vous</h2>
+    <div class="field"><span class="l">Participants</span><div class="parts" id="parts"></div></div>
+    <div class="field"><label for="f-title">Titre</label><input type="text" id="f-title" autocomplete="off" placeholder="Ex. Commission finances"></div>
+    <div class="field"><span class="l">Titre dans l'agenda</span><div class="preview ph" id="preview">Cochez des participants et saisissez un titre</div></div>
+    <div class="row">
+      <div class="field"><label for="f-date">Date</label><input type="date" id="f-date"></div>
+      <div class="field"><label for="f-start">Début</label><input type="time" id="f-start" step="900"></div>
+      <div class="field"><label for="f-end">Fin</label><input type="time" id="f-end" step="900"></div>
+    </div>
+    <div class="field"><label for="f-notes">Commentaires</label><textarea id="f-notes"></textarea></div>
+    <div class="err" id="ev-err" role="alert"></div>
+    <div class="actions">
+      <button class="btn danger" type="button" id="ev-del" hidden>Supprimer</button>
+      <span class="spacer"></span>
+      <button class="btn" type="button" id="ev-cancel">Annuler</button>
+      <button class="btn primary" type="submit">Enregistrer</button>
+    </div>
+  </form>
+</div>
+
+<div class="veil" id="veil-p" hidden>
+  <form class="sheet" id="form-p" novalidate>
+    <h2>Équipe</h2>
+    <div class="team" id="team"></div>
+    <div class="row">
+      <div class="field"><label for="p-name">Nouveau membre</label><input type="text" id="p-name" autocomplete="off" placeholder="Prénom Nom"></div>
+      <div class="field"><label for="p-ini">Initiales</label><input type="text" id="p-ini" autocomplete="off" maxlength="4" placeholder="Ex. CB"></div>
+    </div>
+    <div class="err" id="p-err" role="alert"></div>
+    <div class="actions">
+      <span class="spacer"></span>
+      <button class="btn" type="button" id="p-close">Fermer</button>
+      <button class="btn primary" type="submit">Ajouter</button>
+    </div>
+  </form>
+</div>
+
+
+<script src="config.js"></script>
+<script src="store.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
