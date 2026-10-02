@@ -147,7 +147,7 @@
     else $('range').textContent = fmt(days[0], { day: 'numeric', month: 'short' }) + ' – ' + fmt(days[6], { day: 'numeric', month: 'short', year: 'numeric' });
     var span = H1 - H0, today = ds(new Date()), g = $('grid');
     var colW = Math.max(150, ($('scroller').clientWidth - LEFT) / days.length);
-    g.style.setProperty('--n', days.length); g.style.setProperty('--hh', HH + 'px'); g.style.setProperty('--span', span);
+    g.classList.toggle('day', view === 'day'); g.style.setProperty('--n', days.length); g.style.setProperty('--hh', HH + 'px'); g.style.setProperty('--span', span);
     var h = '<div class="gh"></div>';
     days.forEach(function (x) { h += '<div class="gh' + (ds(x) === today ? ' today' : '') + '">' + fmt(x, { weekday: 'short' }) + '<b>' + x.getDate() + '</b></div>'; });
     h += '<div class="adl">Journée</div>';
@@ -171,8 +171,8 @@
       layout(list).forEach(function (e) {
         var s = Math.max(mins(e.start), H0 * 60), en = Math.min(mins(e.end), H1 * 60);
         var top = (s - H0 * 60) / 60 * HH + TOP, ht = Math.max((en - s) / 60 * HH, 24) - 1;
-        var p = paint(e), n = e._n, side = n <= 2 || view === 'day' || colW / n >= 110, W = side ? 100 / n : 70, L = side ? e._col * W : e._col * (30 / (n - 1));
-        h += '<button type="button" class="ev' + p.cls + (e.pending ? ' pending' : '') + '" data-id="' + esc(e.id) + '" title="' + esc(evText(e)) + '" style="' + p.style + 'top:' + top + 'px;--h:' + ht + 'px;z-index:' + (2 + e._col) + ';left:calc(' + L + '% + 2px);width:calc(' + W + '% - 4px)">' +
+        var p = paint(e), n = e._n, side = n <= 2 || view === 'day' || colW / n >= 110, W = side ? (view === 'day' ? Math.min(100 / n, 50) : 100 / n) : 70, L = side ? e._col * W : e._col * (30 / (n - 1));
+        h += '<button type="button" class="ev' + p.cls + (e.pending ? ' pending' : '') + '" data-id="' + esc(e.id) + '" title="' + esc(evText(e)) + '" style="' + p.style + 'top:' + top + 'px;--h:' + ht + 'px;z-index:' + (2 + e._col) + ';--l:calc(' + L + '% + 2px);--w:calc(' + W + '% - 4px);left:var(--l);width:var(--w)">' +
           '<div class="t">' + esc(prefix(e.parts) + e.title) + '</div><div class="h">' + e.start + '–' + e.end + '</div>' +
           (e.location && ht >= 58 ? '<div class="loc">' + esc(e.location) + '</div>' : '') + '</button>';
       });
@@ -211,7 +211,7 @@
   $('today').onclick = function () { cursor = ds(new Date()); reload(); };
   $('goto').onchange = function () {
     var y = +String(this.value).slice(0, 4);
-    if (this.value && y >= 2000 && y <= 2100) { cursor = this.value; reload(); }
+    if (this.value && y >= 2000 && y <= 2100) { cursor = this.value; reload(); this.blur(); }
   };
   $('v-day').onclick = function () { view = 'day'; reload(); };
   $('v-week').onclick = function () { view = 'week'; reload(); };
@@ -338,6 +338,20 @@
     }, function (x) { $('p-err').textContent = x.message; });
   };
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeEv(); $('veil-p').hidden = true; } });
+  /* Clavier : ← → changent de semaine (ou de jour), ↑ ↓ font défiler les heures */
+  document.addEventListener('keydown', function (e) {
+    if (e.defaultPrevented || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+    if ($('main').hidden || !$('veil-ev').hidden || !$('veil-p').hidden) return;
+    var t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (t && t.isContentEditable)) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); shift(-1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); shift(1); }
+    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      $('scroller').scrollBy({ top: (e.key === 'ArrowDown' ? 1 : -1) * HH, behavior: calm ? 'auto' : 'smooth' });
+    }
+  });
 
   /* Démarrage et connexion */
   function enter() {
