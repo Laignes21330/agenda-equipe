@@ -3,30 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Agenda d'équipe</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
+<title>Agenda du maire et des adjoints</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@800&family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#0f6b66">
+<meta name="theme-color" content="#1f6f54">
 </head>
 <body>
 <div class="app">
+  <svg class="frieze" aria-hidden="true" focusable="false" height="20" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="tuiles" width="80" height="20" patternUnits="userSpaceOnUse"><polygon points="10,0 20,10 10,20 0,10" fill="#1f6f54"/><polygon points="30,0 40,10 30,20 20,10" fill="#e3a72f"/><polygon points="50,0 60,10 50,20 40,10" fill="#b8452f"/><polygon points="70,0 80,10 70,20 60,10" fill="#3b2a20"/></pattern></defs><rect width="100%" height="20" fill="url(#tuiles)"/></svg>
   <header class="top">
+    <img class="blason" src="blason.png" width="48" height="56" alt="Blason de Laignes">
     <div>
-      <h1>Agenda d'équipe</h1>
+      <h1>Agenda du maire et des adjoints</h1>
       <div class="status" id="status"></div>
-    </div>
-    <div class="actions">
-      <button class="btn" id="btn-person" type="button">Gérer l'équipe</button>
-      <button class="btn" id="btn-out" type="button" hidden>Se déconnecter</button>
-      <button class="btn primary" id="btn-new" type="button">+ Rendez-vous</button>
     </div>
   </header>
 
   <div class="banner error" id="banner" hidden role="alert"></div>
-  <div class="login" id="login" hidden><form class="box" id="form-in" novalidate><h2>Agenda d'équipe</h2><p>Saisissez le code d'accès de l'équipe pour afficher et modifier l'agenda de la commune.</p><div class="field" style="width:100%;text-align:left"><label for="in-code">Code d'accès</label><input type="password" id="in-code" autocomplete="current-password"></div><div class="err" id="in-err" role="alert"></div><button class="btn primary" id="btn-in" type="submit">Entrer</button></form></div>
+  <div class="login" id="login" hidden><form class="box" id="form-in" novalidate><h2>Agenda du maire et des adjoints</h2><p>Saisissez le code d'accès de l'équipe pour afficher et modifier l'agenda de la commune.</p><div class="field" style="width:100%;text-align:left"><label for="in-code">Code d'accès</label><input type="password" id="in-code" autocomplete="current-password"></div><div class="err" id="in-err" role="alert"></div><button class="btn primary" id="btn-in" type="submit">Entrer</button></form></div>
   <div id="main">
   <div class="bar">
     <div class="seg" role="group" aria-label="Vue">
@@ -37,11 +34,19 @@
       <button class="btn" id="prev" type="button" aria-label="Précédent">‹</button>
       <button class="btn" id="today" type="button">Aujourd'hui</button>
       <button class="btn" id="next" type="button" aria-label="Suivant">›</button>
+      <input class="btn" id="goto" type="date" aria-label="Aller à une date" title="Aller à une date">
     </div>
     <div class="range" id="range"></div>
   </div>
 
-  <div class="filters" id="filters" aria-label="Filtrer par personne"></div>
+  <div class="rowf">
+    <div class="filters" id="filters" aria-label="Filtrer par personne"></div>
+    <div class="actions">
+      <button class="btn" id="btn-person" type="button">Gérer l'équipe</button>
+      <button class="btn" id="btn-out" type="button" hidden>Se déconnecter</button>
+      <button class="btn primary" id="btn-new" type="button">+ Rendez-vous</button>
+    </div>
+  </div>
 
   <div class="board"><div class="scroller" id="scroller"><div class="grid" id="grid"></div></div></div>
   <div class="foot">Cliquez sur un créneau vide pour créer un rendez-vous, ou sur un rendez-vous pour le modifier.</div>
@@ -51,6 +56,7 @@
 <div class="veil" id="veil-ev" hidden>
   <form class="sheet" id="form-ev" novalidate>
     <h2 id="ev-h">Nouveau rendez-vous</h2>
+    <div class="field"><span class="l">Événement extérieur</span><div class="parts" id="evtbox"><label style="--c:#4b5563"><input type="checkbox" id="f-evt"><span class="ini">EVT</span><span>Événement auquel des élus souhaitent participer</span></label></div></div>
     <div class="field"><span class="l">Participants</span><div class="parts" id="parts"></div></div>
     <div class="field"><label for="f-title">Titre</label><input type="text" id="f-title" autocomplete="off" placeholder="Ex. Commission finances"></div>
     <div class="field"><span class="l">Titre dans l'agenda</span><div class="preview ph" id="preview">Cochez des participants et saisissez un titre</div></div>
@@ -68,7 +74,7 @@
       <button class="btn danger" type="button" id="ev-del" hidden>Supprimer</button>
       <span class="spacer"></span>
       <button class="btn" type="button" id="ev-cancel">Annuler</button>
-      <button class="btn primary" type="submit">Enregistrer</button>
+      <button class="btn primary" id="ev-save" type="submit">Enregistrer</button>
     </div>
   </form>
 </div>

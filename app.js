@@ -1,5 +1,5 @@
 (function () {
-  var HH = 48, H0 = 7, H1 = 21;
+  var HH = 60, H0 = 7, H1 = 21;
   var COLORS = window.AGENDA_COLORS;
   var $ = function (id) { return document.getElementById(id); };
   var pad = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -11,11 +11,27 @@
   var monday = function (d) { var x = new Date(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
   var fmt = function (d, o) { return d.toLocaleDateString('fr-FR', o); };
 
-  var users = [], events = [], selected = {}, view = (window.innerWidth < 700 ? 'day' : 'week'), cursor = ds(new Date()), editing = null, busy = false;
+  var users = [], events = [], selected = {}, view = (window.innerWidth < 700 ? 'day' : 'week'), cursor = ds(new Date()), editing = null, busy = false, saving = false;
 
+  var EVT = 'evt';
   function prefix(ids) {
     var list = users.filter(function (u) { return ids.indexOf(u.id) > -1; }).map(function (u) { return u.ini; });
-    return list.length ? '(' + list.join(', ') + ') ' : '';
+    return (ids.indexOf(EVT) > -1 ? 'EVT: ' : '') + (list.length ? '(' + list.join(', ') + ') ' : '');
+  }
+  var realParts = function (ids) { return ids.filter(function (p) { return p !== EVT; }); };
+  /* Anciens rendez-vous sans étiquettes : on relit « EVT: (JMM, MA) Titre » ou « (JFL, EVT) Titre » dans le titre */
+  function legacy(e) {
+    if (e.parts.length) return e;
+    var m = /^\s*(EVT\s*:\s*)?(?:\(([^)]*)\)\s*)?([\s\S]*)$/.exec(e.title), ids = [];
+    if (!m || (!m[1] && m[2] === undefined)) return e;
+    if (m[1]) ids.push(EVT);
+    (m[2] || '').split(',').forEach(function (t) {
+      t = t.trim().toUpperCase(); if (!t) return;
+      if (t === 'EVT') { if (ids.indexOf(EVT) < 0) ids.push(EVT); return; }
+      users.forEach(function (u) { if (u.ini.toUpperCase() === t) ids.push(u.id); });
+    });
+    if (!ids.length) return e;
+    e.parts = ids; e.title = m[3]; return e;
   }
   var store = window.createStore(prefix);
   var uById = function (id) { for (var i = 0; i < users.length; i++) if (users[i].id === id) return users[i]; return null; };
@@ -30,7 +46,7 @@
   }
   function reload() {
     var r = range();
-    return run(store.list(ds(r[0]), ds(r[1]))).then(function (list) { events = list; render(); }, function () { render(); });
+    return run(store.list(ds(r[0]), ds(r[1]))).then(function (list) { events = list.map(legacy); render(); }, function () { render(); });
   }
 
   function renderFilters() {
@@ -45,16 +61,20 @@
   /* Couleur d'un rendez-vous : une seule personne = sa couleur, plusieurs = bandes obliques de largeur fixe */
   function paint(e) {
     var cols = users.filter(function (u) { return e.parts.indexOf(u.id) > -1; }).map(function (u) { return u.c; });
+    var evt = e.parts.indexOf(EVT) > -1;
     var tint = function (c) { return 'color-mix(in srgb, ' + c + ' 40%, var(--surface))'; };
-    if (!cols.length) return { cls: ' ext', style: '' };
-    if (cols.length === 1) return { cls: '', style: 'background:' + tint(cols[0]) + ';border-left:3px solid ' + cols[0] + ';' };
-    var stops = cols.map(function (c, k) { return tint(c) + ' ' + (k * 10) + 'px ' + ((k + 1) * 10) + 'px'; }).join(',');
+    if (!cols.length) return { cls: evt ? ' evt' : ' ext', style: '' };
+    if (cols.length === 1 && !evt) return { cls: '', style: 'background:' + tint(cols[0]) + ';border-left:3px solid ' + cols[0] + ';' };
+    /* bandes obliques de largeur fixe ; EVT apporte une bande de gris foncé */
+    var tints = cols.map(tint);
+    if (evt) tints.unshift('color-mix(in srgb, #4b5563 70%, var(--surface))');
+    var stops = tints.map(function (c, k) { return c + ' ' + (k * 10) + 'px ' + ((k + 1) * 10) + 'px'; }).join(',');
     return { cls: ' multi', style: 'background:repeating-linear-gradient(135deg,' + stops + ');' };
   }
   function evText(e) {
     return prefix(e.parts) + e.title + (e.allDay ? ' (toute la journée)' : ' · ' + e.start + '–' + e.end) + (e.location ? ' · ' + e.location : '');
   }
-  function visible(e) { return !e.parts.length || e.parts.some(function (p) { return selected[p]; }); }
+  function visible(e) { var r = realParts(e.parts); return !r.length || r.some(function (p) { return selected[p]; }); }
 
   function layout(list) {
     list = list.slice().sort(function (a, b) { return mins(a.start) - mins(b.start) || mins(b.end) - mins(a.end); });
@@ -81,6 +101,7 @@
     $('v-day').setAttribute('aria-pressed', view === 'day');
     $('v-week').setAttribute('aria-pressed', view === 'week');
     renderFilters();
+    $('goto').value = cursor;
     var r = range(), days = [];
     for (var x = r[0]; x <= r[1]; x = addDays(x, 1)) days.push(x);
     if (view === 'day') $('range').textContent = fmt(days[0], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -128,6 +149,7 @@
   $('prev').onclick = function () { shift(-1); };
   $('next').onclick = function () { shift(1); };
   $('today').onclick = function () { cursor = ds(new Date()); reload(); };
+  $('goto').onchange = function () { if (this.value) { cursor = this.value; reload(); } };
   $('v-day').onclick = function () { view = 'day'; reload(); };
   $('v-week').onclick = function () { view = 'week'; reload(); };
   $('filters').onclick = function (e) {
@@ -143,7 +165,7 @@
       return '<label style="--c:' + u.c + '"><input type="checkbox" value="' + u.id + '"' + (sel.indexOf(u.id) > -1 ? ' checked' : '') + '><span class="ini">' + esc(u.ini) + '</span><span>' + esc(u.name) + '</span></label>';
     }).join('');
   }
-  function checked() { return Array.prototype.map.call($('parts').querySelectorAll('input:checked'), function (i) { return i.value; }); }
+  function checked() { var ids = Array.prototype.map.call($('parts').querySelectorAll('input:checked'), function (i) { return i.value; }); if ($('f-evt').checked) ids.unshift(EVT); return ids; }
   function updatePreview() {
     var t = $('f-title').value.trim(), p = $('preview'), ids = checked();
     if (!t && !ids.length) { p.className = 'preview ph'; p.textContent = 'Cochez des participants et saisissez un titre'; }
@@ -158,6 +180,7 @@
     editing = ev ? ev.id : null;
     $('ev-h').textContent = ev ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous';
     renderParts(ev ? ev.parts : []);
+    $('f-evt').checked = !!(ev && ev.parts.indexOf(EVT) > -1);
     $('f-title').value = ev ? ev.title : '';
     $('f-allday').checked = !!(ev && ev.allDay);
     $('f-date').value = ev ? ev.date : (date || cursor);
@@ -175,6 +198,7 @@
   $('btn-new').onclick = function () { openEv(null); };
   $('ev-cancel').onclick = closeEv;
   $('parts').onchange = updatePreview;
+  $('f-evt').onchange = updatePreview;
   $('f-title').oninput = updatePreview;
   $('ev-del').onclick = function () {
     if (!$('ev-del').dataset.arm) { $('ev-del').dataset.arm = '1'; $('ev-del').textContent = 'Confirmer la suppression'; return; }
@@ -185,7 +209,7 @@
     e.preventDefault();
     var ids = checked(), t = $('f-title').value.trim(), dt = $('f-date').value, ad = $('f-allday').checked;
     var s = $('f-start').value, en = $('f-end').value, d2 = $('f-date2').value || dt, err = '';
-    if (!ids.length) err = 'Cochez au moins un participant.';
+    if (!ids.length) err = 'Cochez au moins un participant, ou « Événement extérieur ».';
     else if (!t) err = 'Saisissez un titre.';
     else if (!dt) err = 'Indiquez la date.';
     else if (ad && d2 < dt) err = 'La date de fin doit être après la date de début.';
@@ -193,7 +217,10 @@
     else if (!ad && mins(en) <= mins(s)) err = 'L\'heure de fin doit être après l\'heure de début.';
     $('ev-err').textContent = err; if (err) return;
     var rec = { id: editing, parts: ids, title: t, date: dt, allDay: ad, endDate: ad ? d2 : '', start: ad ? '' : s, end: ad ? '' : en, location: $('f-loc').value.trim(), notes: $('f-notes').value.trim() };
-    run(store.save(rec)).then(function () { closeEv(); cursor = dt; return reload(); }, function (x) { $('ev-err').textContent = x.message; });
+    if (saving) return;
+    saving = true; $('ev-save').disabled = true; $('ev-save').textContent = 'Enregistrement…';
+    function done() { saving = false; $('ev-save').disabled = false; $('ev-save').textContent = 'Enregistrer'; }
+    run(store.save(rec)).then(function () { done(); closeEv(); cursor = dt; return reload(); }, function (x) { done(); $('ev-err').textContent = x.message; });
   };
   $('grid').onclick = function (e) {
     var ev = e.target.closest('.ev, .adev');
@@ -227,7 +254,7 @@
   function enter() {
     $('login').hidden = true; $('main').hidden = false;
     $('btn-out').hidden = store.mode !== 'script';
-    $('status').textContent = store.mode === 'script' ? 'Agenda de la commune' : 'Mode démo · données gardées dans ce navigateur';
+    $('status').textContent = store.mode === 'script' ? 'Commune de Laignes' : 'Mode démo · données gardées dans ce navigateur';
     return run(store.loadUsers()).then(function (u) {
       users = u; users.forEach(function (x) { selected[x.id] = true; });
       return reload();

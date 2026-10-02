@@ -1,8 +1,8 @@
 /* Service worker : garde l'application disponible hors connexion.
    Les fichiers de l'application sont toujours demandés au réseau d'abord (pour recevoir les mises à jour),
    puis lus depuis la mémoire si le réseau est indisponible. Les appels à Google ne sont pas interceptés. */
-var CACHE = 'agenda-equipe-v3';
-var FILES = ['./', 'index.html', 'style.css', 'config.js', 'store.js', 'app.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'];
+var CACHE = 'agenda-equipe-v7';
+var FILES = ['./', 'index.html', 'style.css', 'config.js', 'store.js', 'app.js', 'manifest.webmanifest', 'blason.png', 'icon-192.png', 'icon-512.png'];
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));
 });
