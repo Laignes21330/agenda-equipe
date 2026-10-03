@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Agenda du maire et des adjoints</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@800&family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@700&family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -16,9 +16,13 @@
   <svg class="frieze" aria-hidden="true" focusable="false" height="20" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="tuiles" width="80" height="20" patternUnits="userSpaceOnUse"><polygon points="10,0 20,10 10,20 0,10" fill="#1f6f54"/><polygon points="30,0 40,10 30,20 20,10" fill="#e3a72f"/><polygon points="50,0 60,10 50,20 40,10" fill="#b8452f"/><polygon points="70,0 80,10 70,20 60,10" fill="#3b2a20"/></pattern></defs><rect width="100%" height="20" fill="url(#tuiles)"/></svg>
   <header class="top">
     <img class="blason" src="blason.png" width="48" height="56" alt="Blason de Laignes">
-    <div>
+    <div class="ttl">
       <h1>Agenda du maire et des adjoints</h1>
       <div class="status" id="status"></div>
+    </div>
+    <div class="hright">
+      <div class="range" id="range"></div>
+      <button class="btn rot" id="btn-rot" type="button" aria-label="Basculer entre l'affichage portrait et paysage" title="Portrait / paysage"><svg viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="12" y="5" width="10" height="17" rx="2.5"/><path d="M5 21 C5 28 11 31 17 30 C23 29 28 25 29 20"/><polyline points="25,19 29,20 30,15"/></svg></button>
     </div>
   </header>
 
@@ -31,12 +35,11 @@
       <button type="button" id="v-week" aria-pressed="true">Semaine</button>
     </div>
     <div class="nav">
-      <button class="btn" id="prev" type="button" aria-label="Précédent">‹</button>
+      <button class="btn arrow" id="prev" type="button" aria-label="Précédent"><svg class="tri" viewBox="0 0 26 28" aria-hidden="true" focusable="false"><polygon points="23,2 23,26 3,14"/></svg></button>
       <button class="btn" id="today" type="button">Aujourd'hui</button>
-      <button class="btn" id="next" type="button" aria-label="Suivant">›</button>
+      <button class="btn arrow" id="next" type="button" aria-label="Suivant"><svg class="tri" viewBox="0 0 26 28" aria-hidden="true" focusable="false"><polygon points="3,2 3,26 23,14"/></svg></button>
       <input class="btn" id="goto" type="date" aria-label="Aller à une date" title="Aller à une date">
     </div>
-    <div class="range" id="range"></div>
     <span class="sync" id="sync" hidden></span>
   </div>
 

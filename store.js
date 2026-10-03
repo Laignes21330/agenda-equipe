@@ -4,13 +4,14 @@
    Interface : init() signIn() signOut() loadUsers() saveUsers(u) list(from,to) save(ev) remove(id) */
 (function () {
   var CFG = window.AGENDA_CONFIG;
-  var COLORS = ['#2f7dd1', '#d9822b', '#2e9e6b', '#b45bb8', '#d1495b', '#7a8a1f', '#3a9fb5', '#8a6d3b'];
+  /* Les cinq premières couleurs suivent l'ordre protocolaire : JMM, JFG, SP, JFL, MA */
+  var COLORS = ['#C00000', '#5DC934', '#E09B0F', '#C233B5', '#0C8BBF', '#7a8a1f', '#3a9fb5', '#8a6d3b'];
   var DEFAULT_USERS = [
     { id: 'u1', name: 'Jean-Michel Mars', ini: 'JMM', c: COLORS[0] },
-    { id: 'u2', name: 'Mireille Augueux', ini: 'MA', c: COLORS[1] },
+    { id: 'u4', name: 'Jean-François Guillaume', ini: 'JFG', c: COLORS[1] },
     { id: 'u3', name: 'Sylvie Palomino', ini: 'SP', c: COLORS[2] },
-    { id: 'u4', name: 'Jean-François Guillaume', ini: 'JFG', c: COLORS[3] },
-    { id: 'u5', name: 'Jean-François Louchin', ini: 'JFL', c: COLORS[4] }
+    { id: 'u5', name: 'Jean-François Louchin', ini: 'JFL', c: COLORS[3] },
+    { id: 'u2', name: 'Mireille Augueux', ini: 'MA', c: COLORS[4] }
   ];
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function ds(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
