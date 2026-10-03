@@ -135,7 +135,7 @@
     if (cols.length === 1 && !evt) return { cls: '', style: 'background:' + us[0].p + ';border-left:3px solid ' + cols[0] + ';' };
     /* bandes obliques de largeur fixe (teintes pastel) ; EVT apporte une bande de gris foncé */
     var tints = us.map(function (u) { return u.p; });
-    if (evt) tints.unshift('color-mix(in srgb, #4b5563 70%, var(--surface))');
+    if (evt) tints.unshift('#E2E6EA');
     var stops = tints.map(function (c, k) { return c + ' ' + (k * 10) + 'px ' + ((k + 1) * 10) + 'px'; }).join(',');
     return { cls: ' multi', style: 'background:repeating-linear-gradient(135deg,' + stops + ');' };
   }
