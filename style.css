@@ -12,13 +12,9 @@
   --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-title: "Bricolage Grotesque", "DM Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #121a17; --surface: #1a2421; --fg: #e6eeea; --muted: #9db0a8; --line: #2b3a35;
-    --accent: #4fbf93; --accent-fg: #06190f; --danger: #ff8a80; --now: #ff8a70; color-scheme: dark;
-  }
-}
+/* Thème clair imposé : le réglage sombre du téléphone n'est pas suivi (le thème sombre reste disponible via data-theme="dark", pour plus tard). */
 :root[data-theme="dark"] {
   --bg: #121a17; --surface: #1a2421; --fg: #e6eeea; --muted: #9db0a8; --line: #2b3a35;
   --accent: #4fbf93; --accent-fg: #06190f; --danger: #ff8a80; --now: #ff8a70; color-scheme: dark;
@@ -178,3 +174,43 @@ textarea { resize: vertical; min-height: 84px; }
 .adev.multi .h { display: block; }
 /* En vue Jour, un rendez-vous agrandi au survol garde sa largeur */
 .grid.day .ev:hover, .grid.day .ev:focus-visible { left: var(--l) !important; width: var(--w) !important; }
+
+/* ===== Téléphone (portrait et paysage) : l'écran est figé, seul le planning défile ===== */
+@media (max-width: 700px), (max-height: 520px) {
+  html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+  body { padding: 6px 8px; }
+  .app { height: calc(100dvh - 12px); gap: 6px; max-width: none; }
+  #main { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+  .board { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .scroller { flex: 1; min-height: 0; max-height: none !important; }
+  .foot { display: none; }
+  .frieze { height: 12px; }
+  .blason { height: 38px; }
+  .top { gap: 10px; }
+  .top h1 { font-size: 1.15rem; }
+  .status { font-size: 0.75rem; margin-top: 2px; }
+  .btn, .seg button { padding: 7px 10px; font-size: 0.9rem; }
+  .bar { gap: 6px 8px; flex-wrap: wrap; }
+  .nav { display: flex; gap: 4px; align-items: center; }
+  #goto { width: 9.5em; font-size: 0.9rem; }
+  .range { font-size: 1rem; font-weight: 700; width: 100%; }
+  .rowf { gap: 6px; align-items: center; flex-wrap: wrap; }
+  .filters { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; gap: 6px; scrollbar-width: none; }
+  .filters .lbl { display: none; }
+  .chip { flex: none; padding: 4px 10px 4px 5px; white-space: nowrap; }
+  .actions { display: flex; gap: 6px; flex-wrap: nowrap; }
+  .actions .btn { white-space: nowrap; padding: 7px 9px; font-size: 0.85rem; }
+}
+@media (max-height: 520px) {
+  .frieze, .top { display: none; }
+  .range { width: auto; font-size: 0.9rem; }
+  .btn, .seg button { padding: 4px 9px; font-size: 0.85rem; }
+  .actions .btn { padding: 4px 8px; }
+  #main > .bar, #main > .rowf { flex: none; }
+  #main > .bar { justify-content: space-between; }
+}
+@media (max-height: 520px) {
+  .gh { padding-block: 2px !important; line-height: 1.1; display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 6px; }
+  .gh.today b, .gh b { width: 28px; height: 28px; margin: 0; font-size: 1rem; }
+  .adl, .ad { min-height: 0; }
+}
