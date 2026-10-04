@@ -28,13 +28,13 @@
   <div id="main">
   <div class="bar">
     <div class="seg" role="group" aria-label="Vue">
-      <button type="button" id="v-day" aria-pressed="false">Jour</button>
-      <button type="button" id="v-week" aria-pressed="true">Semaine</button>
+      <button type="button" id="v-day" aria-pressed="false" aria-label="Vue jour"><span class="lg">Jour</span><span class="sh">J</span></button>
+      <button type="button" id="v-week" aria-pressed="true" aria-label="Vue semaine"><span class="lg">Semaine</span><span class="sh">S</span></button>
     </div>
     <div class="nav">
-      <button class="btn" id="prev" type="button" aria-label="Précédent">‹</button>
-      <button class="btn" id="today" type="button">Aujourd'hui</button>
-      <button class="btn" id="next" type="button" aria-label="Suivant">›</button>
+      <button class="btn" id="prev" type="button" aria-label="Précédent">◀</button>
+      <button class="btn" id="today" type="button" title="Revenir à aujourd'hui" aria-label="Aujourd'hui"><span class="lg">Aujourd'hui</span><span class="sh" id="today-s"></span></button>
+      <button class="btn" id="next" type="button" aria-label="Suivant">▶</button>
       <input class="btn" id="goto" type="date" aria-label="Aller à une date" title="Aller à une date">
     </div>
     <div class="range" id="range"></div>

@@ -143,13 +143,14 @@
     $('goto').value = cursor;
     var r = range(), days = [];
     for (var x = r[0]; x <= r[1]; x = addDays(x, 1)) days.push(x);
+    $('today-s').textContent = view === 'day' ? days[0].getDate() : days[0].getDate() + '–' + days[6].getDate();
     if (view === 'day') $('range').textContent = fmt(days[0], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     else $('range').textContent = fmt(days[0], { day: 'numeric', month: 'short' }) + ' – ' + fmt(days[6], { day: 'numeric', month: 'short', year: 'numeric' });
     var span = H1 - H0, today = ds(new Date()), g = $('grid');
     var colW = Math.max(150, ($('scroller').clientWidth - LEFT) / days.length);
     g.classList.toggle('day', view === 'day'); g.style.setProperty('--n', days.length); g.style.setProperty('--hh', HH + 'px'); g.style.setProperty('--span', span);
     var h = '<div class="gh"></div>';
-    days.forEach(function (x) { h += '<div class="gh' + (ds(x) === today ? ' today' : '') + '">' + fmt(x, { weekday: 'short' }) + '<b>' + x.getDate() + '</b></div>'; });
+    days.forEach(function (x) { h += '<div class="gh' + (ds(x) === today ? ' today' : '') + '">' + fmt(x, { weekday: 'long' }) + '<b>' + x.getDate() + '</b></div>'; });
     h += '<div class="adl">Journée</div>';
     days.forEach(function (x) {
       var key = ds(x);

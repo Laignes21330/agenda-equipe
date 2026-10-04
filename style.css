@@ -214,3 +214,28 @@ textarea { resize: vertical; min-height: 84px; }
   .gh.today b, .gh b { width: 28px; height: 28px; margin: 0; font-size: 1rem; }
   .adl, .ad { min-height: 0; }
 }
+
+/* Libellés longs / courts */
+.sh { display: none; }
+.gh { text-transform: capitalize; }
+#prev, #next { font-size: 1rem; padding-inline: 12px; }
+@media (max-width: 700px), (max-height: 520px) {
+  .lg { display: none; }
+  .sh { display: inline; }
+  .seg button { padding: 7px 14px; font-weight: 700; }
+  #today { min-width: 3.2em; font-weight: 700; }
+  .bar { flex-wrap: wrap; align-items: center; }
+  .nav { flex: 1; justify-content: space-between; }
+  #prev, #next { padding: 7px 14px; font-size: 1.1rem; }
+  #goto { position: relative; width: 48px; padding: 0; height: 38px; overflow: hidden; }
+  #goto::-webkit-datetime-edit { display: none; }
+  #goto::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; cursor: pointer; }
+  .actions { width: 100%; }
+  .actions .btn { flex: 1 1 auto; padding: 7px 4px; font-size: 0.78rem; }
+  .gh { font-size: 0.72rem; padding-inline: 2px; }
+}
+@media (max-height: 520px) {
+  .actions { width: auto; }
+  .actions .btn { flex: none; padding: 4px 8px; font-size: 0.85rem; }
+  .nav { flex: none; gap: 8px; }
+}
