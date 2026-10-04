@@ -240,14 +240,14 @@ textarea { resize: vertical; min-height: 84px; }
   .nav { flex: none; gap: 8px; }
 }
 
-/* Rendez-vous à plusieurs : fond neutre, titre sans initiales, carrés colorés */
-.ev.multi, .adev.multi { background: color-mix(in srgb, var(--fg) 5%, var(--surface)); border: 1px solid color-mix(in srgb, var(--fg) 22%, var(--surface)); border-left: 5px solid var(--fg); }
-.ev.multi.evtm, .adev.multi.evtm { border-left-color: #4b5563; }
-.multi .t, .multi .h, .multi .loc { background: none; padding: 0; margin-top: 1px; display: block; width: auto; }
-.multi .t { color: var(--fg); }
 .sq { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
 .sq i { font-style: normal; font-size: 0.62rem; font-weight: 700; line-height: 1.3; color: #fff; background: var(--c); border-radius: 4px; padding: 0 5px; }
 .adev .sq { margin-top: 2px; }
+.board { position: relative; }
+.scroller { touch-action: pan-x pan-y; }
+.more { position: absolute; left: 50%; transform: translateX(-50%); z-index: 30; border: 2px solid #fff; background: var(--accent); color: #fff; font-weight: 700; font-size: 1.05rem; padding: 9px 20px; border-radius: 999px; box-shadow: 0 4px 14px rgba(0,0,0,.35); cursor: pointer; white-space: nowrap; }
+.more.dn { bottom: 12px; }
+.more[hidden] { display: none; }
 #btn-rot { display: none; font-size: 1.15rem; padding: 4px 11px; }
 @media (pointer: coarse) { #btn-rot { display: inline-block; } }
 @media (max-width: 700px), (max-height: 520px) { #btn-rot { flex: none !important; padding: 4px 12px !important; font-size: 1.2rem !important; } }
@@ -256,3 +256,9 @@ textarea { resize: vertical; min-height: 84px; }
   .actions .btn { font-size: 0.72rem; padding: 7px 3px; min-width: 0; }
   #btn-rot { padding: 3px 9px !important; font-size: 1.15rem !important; }
 }
+
+/* Vue Jour : le nom du jour a la même taille que le numéro ; lieu toujours lisible */
+.grid.day .gh { font-size: 1.15rem; font-weight: 600; color: var(--fg); }
+.ev .h { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev.short .sq { position: absolute; right: 4px; top: 3px; margin: 0; flex-wrap: nowrap; }
+.ev.short .t { padding-right: 70px; }
