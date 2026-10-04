@@ -104,11 +104,14 @@
     var tint = function (c) { return 'color-mix(in srgb, ' + c + ' 40%, var(--surface))'; };
     if (!cols.length) return { cls: evt ? ' evt' : ' ext', style: '' };
     if (cols.length === 1 && !evt) return { cls: '', style: 'background:' + tint(cols[0]) + ';border-left:3px solid ' + cols[0] + ';' };
-    /* bandes obliques de largeur fixe ; EVT apporte une bande de gris foncé */
-    var tints = cols.map(tint);
-    if (evt) tints.unshift('color-mix(in srgb, #4b5563 70%, var(--surface))');
-    var stops = tints.map(function (c, k) { return c + ' ' + (k * 10) + 'px ' + ((k + 1) * 10) + 'px'; }).join(',');
-    return { cls: ' multi', style: 'background:repeating-linear-gradient(135deg,' + stops + ');' };
+    /* plusieurs participants (ou EVT + participant) : fond neutre, titre sans initiales, un carré coloré par participant */
+    return { cls: ' multi' + (evt ? ' evtm' : ''), style: '' };
+  }
+  function isMulti(e) { var r = realParts(e.parts); return r.length > 1 || (r.length > 0 && e.parts.indexOf(EVT) > -1); }
+  function titleOf(e) { return isMulti(e) ? (e.parts.indexOf(EVT) > -1 ? 'EVT: ' : '') + e.title : prefix(e.parts) + e.title; }
+  function badges(e) {
+    if (!isMulti(e)) return '';
+    return '<div class="sq">' + users.filter(function (u) { return e.parts.indexOf(u.id) > -1; }).map(function (u) { return '<i style="--c:' + u.c + '">' + esc(u.ini) + '</i>'; }).join('') + '</div>';
   }
   function evText(e) {
     return prefix(e.parts) + e.title + (e.allDay ? ' (toute la journée)' : ' · ' + e.start + '–' + e.end) + (e.location ? ' · ' + e.location : '');
@@ -157,7 +160,7 @@
       h += '<div class="ad" data-date="' + key + '">';
       events.filter(function (e) { return e.allDay && e.date <= key && (e.endDate || e.date) >= key && visible(e); }).forEach(function (e) {
         var p = paint(e);
-        h += '<button type="button" class="adev' + p.cls + '" data-id="' + esc(e.id) + '" style="' + p.style + '" title="' + esc(evText(e)) + '"><div class="t">' + esc(prefix(e.parts) + e.title) + '</div>' + (e.location ? '<div class="h">' + esc(e.location) + '</div>' : '') + '</button>';
+        h += '<button type="button" class="adev' + p.cls + '" data-id="' + esc(e.id) + '" style="' + p.style + '" title="' + esc(evText(e)) + '"><div class="t">' + esc(titleOf(e)) + '</div>' + (e.location ? '<div class="h">' + esc(e.location) + '</div>' : '') + badges(e) + '</button>';
       });
       h += '</div>';
     });
@@ -174,8 +177,8 @@
         var top = (s - H0 * 60) / 60 * HH + TOP, ht = Math.max((en - s) / 60 * HH, 24) - 1;
         var p = paint(e), n = e._n, side = n <= 2 || view === 'day' || colW / n >= 110, W = side ? (view === 'day' ? Math.min(100 / n, 50) : 100 / n) : 70, L = side ? e._col * W : e._col * (30 / (n - 1));
         h += '<button type="button" class="ev' + p.cls + (e.pending ? ' pending' : '') + '" data-id="' + esc(e.id) + '" title="' + esc(evText(e)) + '" style="' + p.style + 'top:' + top + 'px;--h:' + ht + 'px;z-index:' + (2 + e._col) + ';--l:calc(' + L + '% + 2px);--w:calc(' + W + '% - 4px);left:var(--l);width:var(--w)">' +
-          '<div class="t">' + esc(prefix(e.parts) + e.title) + '</div><div class="h">' + e.start + '–' + e.end + '</div>' +
-          (e.location && ht >= 58 ? '<div class="loc">' + esc(e.location) + '</div>' : '') + '</button>';
+          '<div class="t">' + esc(titleOf(e)) + '</div><div class="h">' + e.start + '–' + e.end + '</div>' +
+          (e.location && ht >= 58 ? '<div class="loc">' + esc(e.location) + '</div>' : '') + badges(e) + '</button>';
       });
       if (key === today) {
         var now = new Date(), nm = now.getHours() * 60 + now.getMinutes();
@@ -220,6 +223,22 @@
   })();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   if (window.ResizeObserver) new ResizeObserver(fit).observe($('grid'));
+
+  /* Bouton d'orientation : verrouille le paysage (plein écran) ou revient au portrait, quand le navigateur le permet */
+  (function () {
+    var b = $('btn-rot'); if (!b) return;
+    b.onclick = function () {
+      var o = screen.orientation, land = o && /landscape/.test(o.type || '') ;
+      try {
+        if (!land) {
+          var p = document.fullscreenElement ? Promise.resolve() : (document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen() : Promise.resolve());
+          p.then(function () { return o.lock('landscape'); }).catch(function () { alert('Votre téléphone ne permet pas de changer l\'orientation depuis l\'application. Activez « Rotation auto » dans le panneau rapide (glisser deux fois depuis le haut de l\'écran), puis tournez le téléphone.'); });
+        } else {
+          Promise.resolve(o.lock('portrait')).then(function () { o.unlock(); if (document.fullscreenElement) document.exitFullscreen(); }).catch(function () { o.unlock && o.unlock(); if (document.fullscreenElement) document.exitFullscreen(); });
+        }
+      } catch (x) { alert('Activez « Rotation auto » dans le panneau rapide de votre téléphone, puis tournez-le.'); }
+    };
+  })();
 
   function shift(n) { cursor = ds(addDays(pd(cursor), view === 'day' ? n : n * 7)); reload(); }
   $('prev').onclick = function () { shift(-1); };
