@@ -309,3 +309,15 @@ textarea { resize: vertical; min-height: 84px; }
   #form-ev .actions .btn, #form-p .actions .btn { flex: none; font-size: 0.9rem; padding: 8px 12px; }
 }
 @media (max-width: 700px), (max-height: 520px) { .adl { font-size: 0.62rem; padding-inline: 2px; text-align: center; } }
+
+/* ===== Version 19 ===== */
+.ver { font-size: 0.65rem; color: var(--muted); opacity: 0.8; }
+.f-prev { display: none !important; }
+.more { background: var(--now); }
+.adl, .hours span { font-weight: 700; }
+@media (max-width: 700px), (max-height: 520px) {
+  .adl { font-size: 0.7rem; }
+  .hours span { font-size: 0.7rem; right: 3px; }
+  .grid { grid-template-columns: var(--lw, 42px) repeat(var(--n), minmax(0, 1fr)); min-width: calc(var(--lw, 42px) + var(--n) * var(--cw, 150px)); }
+}
+@media (max-width: 700px), (max-height: 520px) { .adl { font-size: 0.58rem; padding: 0; text-align: center; overflow: hidden; letter-spacing: -0.02em; } }

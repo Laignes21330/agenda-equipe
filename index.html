@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Agenda du maire et des adjoints</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@800&family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=19">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -19,7 +19,7 @@
     <img class="blason" id="blason" src="blason.png" width="48" height="56" alt="Blason de Laignes">
     <div>
       <h1>Agenda du maire et des adjoints</h1>
-      <div class="status" id="status"></div>
+      <div class="status" id="status"></div><span class="ver">version 19</span>
     </div>
   </header>
 
@@ -62,7 +62,7 @@
 <div class="veil" id="veil-ev" hidden>
   <form class="sheet" id="form-ev" novalidate>
     <h2 id="ev-h">Nouveau rendez-vous</h2>
-    <div class="field"><span class="l"><span class="lg">Événement extérieur</span><span class="sh">Événement public</span></span><div class="parts" id="evtbox"><label style="--c:#4b5563"><input type="checkbox" id="f-evt"><span class="ini">EVT</span><span class="lg">Événement auquel des élus souhaitent participer</span></label></div></div>
+    <div class="field"><span class="l">Événement public</span><div class="parts" id="evtbox"><label style="--c:#4b5563"><input type="checkbox" id="f-evt"><span class="ini">EVT</span></label></div></div>
     <div class="field"><span class="l">Participants</span><div class="parts" id="parts"></div></div>
     <div class="field"><label for="f-title">Titre</label><input type="text" id="f-title" autocomplete="off" placeholder="Ex. Commission finances"></div>
     <div class="field f-prev"><span class="l">Titre dans l'agenda</span><div class="preview ph" id="preview">Cochez des participants et saisissez un titre</div></div>
@@ -105,7 +105,7 @@
 
 
 <script src="config.js"></script>
-<script src="store.js"></script>
-<script src="app.js"></script>
+<script src="store.js?v=19"></script>
+<script src="app.js?v=19"></script>
 </body>
 </html>

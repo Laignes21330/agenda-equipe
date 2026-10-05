@@ -4,7 +4,7 @@
   /* mode téléphone : écran étroit ou peu haut (paysage) */
   var phoneMq = window.matchMedia ? window.matchMedia('(max-width: 700px), (max-height: 520px)') : { matches: false };
   function phone() { return phoneMq.matches; }
-  function lw() { return phone() ? 46 : 64; }
+  function lw() { return phone() ? 42 : 64; }
   var COLORS = window.AGENDA_COLORS;
   var $ = function (id) { return document.getElementById(id); };
   var pad = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -266,20 +266,32 @@
   (function () {
     var sc = $('scroller'), p0 = null, raf = 0, last = null;
     function dist(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+    /* Le planning est redessiné à chaque étape du zoom : les éléments touchés disparaissent de la page.
+       On accroche donc le suivi des doigts directement sur les éléments touchés au départ, qui continuent de recevoir les événements. */
+    var bound = [];
+    function unbind() { bound.forEach(function (b) { ['touchmove', 'touchend', 'touchcancel'].forEach(function (n) { b.removeEventListener(n, onMove); }); b.removeEventListener('touchend', onEnd); b.removeEventListener('touchcancel', onEnd); }); bound = []; }
+    function onMove(e) {
+      if (!p0 || e.touches.length !== 2) return;
+      if (e.cancelable) e.preventDefault();
+      /* suivi 1 pour 1 : l'écart des doigts sur chaque axe donne directement l'échelle de cet axe */
+      var dx = Math.abs(e.touches[0].clientX - e.touches[1].clientX), dy = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
+      last = { h: p0.mode === 'x' ? p0.h : p0.h * Math.max(dy, 12) / p0.dy, c: p0.mode === 'y' ? p0.c : p0.c * Math.max(dx, 12) / p0.dx, cx: (e.touches[0].clientX + e.touches[1].clientX) / 2, cy: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
+      if (!raf) raf = requestAnimationFrame(function () { raf = 0; if (last) zoomTo(last.h, last.c, last.cx, last.cy); });
+    }
+    function onEnd(e) {
+      if (e.touches.length < 2) { p0 = null; last = null; unbind(); setTimeout(function () { pinching = false; }, 300); }
+    }
     sc.addEventListener('touchstart', function (e) {
       if (e.touches.length === 2) {
         var dx = Math.abs(e.touches[0].clientX - e.touches[1].clientX), dy = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
-        p0 = { d: Math.max(dist(e.touches), 20), h: HH, c: CW, mode: dy > 2 * dx ? 'y' : (dx > 2 * dy ? 'x' : 'xy') }; pinching = true;
+        p0 = { dx: Math.max(dx, 24), dy: Math.max(dy, 24), h: HH, c: CW, mode: dy > 2 * dx ? 'y' : (dx > 2 * dy ? 'x' : 'xy') }; pinching = true;
+        unbind();
+        for (var k = 0; k < 2; k++) {
+          var t = e.touches[k].target;
+          if (bound.indexOf(t) < 0) { bound.push(t); t.addEventListener('touchmove', onMove, { passive: false }); t.addEventListener('touchend', onEnd); t.addEventListener('touchcancel', onEnd); }
+        }
       }
     }, { passive: true });
-    sc.addEventListener('touchmove', function (e) {
-      if (!p0 || e.touches.length !== 2) return;
-      e.preventDefault();
-      var r = Math.pow(dist(e.touches) / p0.d, 1.6);   /* amplifié : un petit écart suffit */
-      last = { h: p0.mode === 'x' ? p0.h : p0.h * r, c: p0.mode === 'y' ? p0.c : p0.c * r, cx: (e.touches[0].clientX + e.touches[1].clientX) / 2, cy: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
-      if (!raf) raf = requestAnimationFrame(function () { raf = 0; if (last) zoomTo(last.h, last.c, last.cx, last.cy); });
-    }, { passive: false });
-    sc.addEventListener('touchend', function (e) { if (e.touches.length < 2) { p0 = null; setTimeout(function () { pinching = false; }, 300); } }, { passive: true });
     sc.addEventListener('wheel', function (e) { if (!e.ctrlKey) return; e.preventDefault(); zoomTo(HH * (e.deltaY < 0 ? 1.1 : 0.91), CW, e.clientX, e.clientY); }, { passive: false });
   })();
 
@@ -385,18 +397,19 @@
     $('ev-del').hidden = !ev; $('ev-del').textContent = 'Supprimer'; $('ev-del').dataset.arm = '';
     syncAllDay(); updatePreview(); $('veil-ev').hidden = false;
     /* sur téléphone, un rendez-vous existant s'ouvre en consultation ; appuyer sur le bandeau noir passe en modification */
-    setEditable(!(ev && phone()), !!ev);
+    setEditable(!ev, !!ev);
     $('veil-ev').scrollTop = 0;
-    if (!(ev && phone())) $('f-title').focus();
+    if (!ev) $('f-title').focus();
   }
   function setEditable(on, existing) {
     var f = $('form-ev'), h = $('ev-h');
     Array.prototype.forEach.call(f.querySelectorAll('input, textarea'), function (i) { i.disabled = !on; });
     f.classList.toggle('ro', !on);
-    h.classList.toggle('pill', !!existing && phone());
+    h.classList.toggle('pill', !!existing);
     h.classList.toggle('on', on);
     h.setAttribute('role', !on ? 'button' : 'heading'); h.tabIndex = !on ? 0 : -1;
     $('ev-save').hidden = !on; $('ev-del').hidden = !(on && existing);
+    $('ev-cancel').textContent = on ? 'Annuler' : 'Fermer';
   }
   function unlockEv() { if ($('form-ev').classList.contains('ro')) { setEditable(true, true); } }
   $('ev-h').onclick = unlockEv;
@@ -409,7 +422,7 @@
   $('f-evt').onchange = updatePreview;
   $('f-title').oninput = updatePreview;
   $('ev-del').onclick = function () {
-    if (!$('ev-del').dataset.arm) { $('ev-del').dataset.arm = '1'; $('ev-del').textContent = 'Confirmer la suppression'; return; }
+    if (!confirm('Voulez-vous vraiment supprimer ce rendez-vous ?')) return;
     var id = editing, prev = win ? win.events.slice() : null;
     closeEv(); gen++;
     if (win) { win.events = win.events.filter(function (x) { return x.id !== id; }); events = win.events; render(); }
@@ -433,7 +446,7 @@
     else if (!ad && (!s || !en)) err = 'Indiquez l\'heure de début et l\'heure de fin.';
     else if (!ad && mins(en) <= mins(s)) err = 'L\'heure de fin doit être après l\'heure de début.';
     $('ev-err').textContent = err; if (err) return;
-    if (editing && phone() && !confirm('Voulez-vous sauvegarder les modifications ?')) return;
+    if (editing && !confirm('Voulez-vous sauvegarder les modifications ?')) return;
     var rec = { id: editing, parts: ids, title: t, date: dt, allDay: ad, endDate: ad ? d2 : '', start: ad ? '' : s, end: ad ? '' : en, location: $('f-loc').value.trim(), notes: $('f-notes').value.trim() };
     /* affichage immédiat, envoi au service en arrière-plan */
     var tmp = Object.assign({}, rec, { pending: true }), tmpId = rec.id || ('tmp-' + Date.now());
@@ -469,12 +482,15 @@
   $('p-out').onclick = function () { $('veil-p').hidden = true; store.signOut().then(gate); };
   /* appui long sur le blason : équipe */
   (function () {
-    var b = $('blason'), tm = 0;
+    var tm = 0;
     function stop() { clearTimeout(tm); tm = 0; }
-    b.addEventListener('pointerdown', function () { stop(); tm = setTimeout(function () { tm = 0; $('btn-person').onclick(); }, 600); });
-    ['pointerup', 'pointerleave', 'pointercancel', 'pointermove'].forEach(function (n) { b.addEventListener(n, stop); });
-    b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-    b.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    [$('blason'), document.querySelector('.top h1')].forEach(function (b) {
+      if (!b) return;
+      b.addEventListener('pointerdown', function () { stop(); tm = setTimeout(function () { tm = 0; $('btn-person').onclick(); }, 600); });
+      ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (n) { b.addEventListener(n, stop); });
+      b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+      b.addEventListener('dragstart', function (e) { e.preventDefault(); });
+    });
   })();
   $('form-p').onsubmit = function (e) {
     e.preventDefault();
