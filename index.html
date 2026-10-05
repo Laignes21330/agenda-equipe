@@ -16,7 +16,7 @@
 <div class="app">
   <svg class="frieze" aria-hidden="true" focusable="false" height="20" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="tuiles" width="80" height="20" patternUnits="userSpaceOnUse"><polygon points="10,0 20,10 10,20 0,10" fill="#1f6f54"/><polygon points="30,0 40,10 30,20 20,10" fill="#e3a72f"/><polygon points="50,0 60,10 50,20 40,10" fill="#b8452f"/><polygon points="70,0 80,10 70,20 60,10" fill="#3b2a20"/></pattern></defs><rect width="100%" height="20" fill="url(#tuiles)"/></svg>
   <header class="top">
-    <img class="blason" src="blason.png" width="48" height="56" alt="Blason de Laignes">
+    <img class="blason" id="blason" src="blason.png" width="48" height="56" alt="Blason de Laignes">
     <div>
       <h1>Agenda du maire et des adjoints</h1>
       <div class="status" id="status"></div>
@@ -32,11 +32,15 @@
       <button type="button" id="v-week" aria-pressed="true" aria-label="Vue semaine"><span class="lg">Semaine</span><span class="sh">S</span></button>
     </div>
     <div class="nav">
-      <button class="btn" id="prev" type="button" aria-label="Précédent">◀</button>
-      <button class="btn" id="today" type="button" title="Revenir à aujourd'hui" aria-label="Aujourd'hui"><span class="lg">Aujourd'hui</span><span class="sh" id="today-s"></span></button>
-      <button class="btn" id="next" type="button" aria-label="Suivant">▶</button>
+      <div class="navg">
+        <button class="btn" id="prev" type="button" aria-label="Précédent">◀</button>
+        <button class="btn" id="today" type="button" title="Revenir à aujourd'hui" aria-label="Aujourd'hui"><span class="lg">Aujourd'hui</span><span class="sh" id="today-s"></span></button>
+        <button class="btn" id="next" type="button" aria-label="Suivant">▶</button>
+      </div>
       <input class="btn" id="goto" type="date" aria-label="Aller à une date" title="Aller à une date">
     </div>
+    <button class="btn" id="btn-rot" type="button" title="Basculer portrait / paysage" aria-label="Basculer portrait / paysage">⟳</button>
+    <button class="btn primary" id="btn-new-m" type="button" title="Nouveau rendez-vous" aria-label="Nouveau rendez-vous">+</button>
     <div class="range" id="range"></div>
     <span class="sync" id="sync" hidden></span>
   </div>
@@ -47,11 +51,10 @@
       <button class="btn" id="btn-person" type="button">Gérer l'équipe</button>
       <button class="btn" id="btn-out" type="button" hidden>Se déconnecter</button>
       <button class="btn primary" id="btn-new" type="button">+ Rendez-vous</button>
-      <button class="btn" id="btn-rot" type="button" title="Basculer portrait / paysage" aria-label="Basculer portrait / paysage">⟳</button>
     </div>
   </div>
 
-  <div class="board"><div class="scroller" id="scroller"><div class="grid" id="grid"></div></div></div>
+  <div class="board"><div class="scroller" id="scroller"><div class="grid" id="grid"></div></div><button type="button" class="more up" id="more-up" hidden></button><button type="button" class="more dn" id="more-dn" hidden></button></div>
   <div class="foot">Cliquez sur un créneau vide pour créer un rendez-vous, ou sur un rendez-vous pour le modifier.</div>
   </div>
 </div>
@@ -59,10 +62,10 @@
 <div class="veil" id="veil-ev" hidden>
   <form class="sheet" id="form-ev" novalidate>
     <h2 id="ev-h">Nouveau rendez-vous</h2>
-    <div class="field"><span class="l">Événement extérieur</span><div class="parts" id="evtbox"><label style="--c:#4b5563"><input type="checkbox" id="f-evt"><span class="ini">EVT</span><span>Événement auquel des élus souhaitent participer</span></label></div></div>
+    <div class="field"><span class="l"><span class="lg">Événement extérieur</span><span class="sh">Événement public</span></span><div class="parts" id="evtbox"><label style="--c:#4b5563"><input type="checkbox" id="f-evt"><span class="ini">EVT</span><span class="lg">Événement auquel des élus souhaitent participer</span></label></div></div>
     <div class="field"><span class="l">Participants</span><div class="parts" id="parts"></div></div>
     <div class="field"><label for="f-title">Titre</label><input type="text" id="f-title" autocomplete="off" placeholder="Ex. Commission finances"></div>
-    <div class="field"><span class="l">Titre dans l'agenda</span><div class="preview ph" id="preview">Cochez des participants et saisissez un titre</div></div>
+    <div class="field f-prev"><span class="l">Titre dans l'agenda</span><div class="preview ph" id="preview">Cochez des participants et saisissez un titre</div></div>
     <label class="check"><input type="checkbox" id="f-allday"> Toute la journée</label>
     <div class="row">
       <div class="field"><label for="f-date">Date</label><input type="date" id="f-date"></div>
@@ -93,6 +96,7 @@
     <div class="err" id="p-err" role="alert"></div>
     <div class="actions">
       <span class="spacer"></span>
+      <button class="btn danger" type="button" id="p-out" hidden>Se déconnecter</button>
       <button class="btn" type="button" id="p-close">Fermer</button>
       <button class="btn primary" type="submit">Ajouter</button>
     </div>

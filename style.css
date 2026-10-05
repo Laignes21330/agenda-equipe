@@ -245,7 +245,7 @@ textarea { resize: vertical; min-height: 84px; }
 .adev .sq { margin-top: 2px; }
 .board { position: relative; }
 .scroller { touch-action: pan-x pan-y; }
-.more { position: absolute; left: 50%; transform: translateX(-50%); z-index: 30; border: 2px solid #fff; background: var(--accent); color: #fff; font-weight: 700; font-size: 1.05rem; padding: 9px 20px; border-radius: 999px; box-shadow: 0 4px 14px rgba(0,0,0,.35); cursor: pointer; white-space: nowrap; }
+.more { position: absolute; left: 50%; transform: translateX(-50%); z-index: 15; border: 2px solid #fff; background: var(--accent); color: #fff; font-weight: 700; font-size: 1.05rem; padding: 9px 20px; border-radius: 999px; box-shadow: 0 4px 14px rgba(0,0,0,.35); cursor: pointer; white-space: nowrap; }
 .more.dn { bottom: 12px; }
 .more[hidden] { display: none; }
 #btn-rot { display: none; font-size: 1.15rem; padding: 4px 11px; }
@@ -262,3 +262,50 @@ textarea { resize: vertical; min-height: 84px; }
 .ev .h { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ev.short .sq { position: absolute; right: 4px; top: 3px; margin: 0; flex-wrap: nowrap; }
 .ev.short .t { padding-right: 70px; }
+
+/* ================= Mode téléphone ================= */
+.navg { display: contents; }
+#btn-new-m, #btn-rot { display: none; }
+.blason { -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+#ev-h.pill { display: inline-block; align-self: flex-start; background: #111; color: #fff; padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+#ev-h.pill.on { background: #c0261b; }
+#form-ev.ro .field, #form-ev.ro .check { opacity: 0.85; }
+@media (max-width: 700px), (max-height: 520px) {
+  /* ligne 1 : J/S, ◀ jour ▶, calendrier, rotation, + */
+  .rowf .actions { display: none !important; }
+  .bar { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 5px; }
+  .nav { display: contents; }
+  .seg button { padding: 7px 11px; }
+  .navg { display: inline-flex; gap: 0; }
+  .navg .btn { border-radius: 0; margin: 0; padding: 7px 9px; }
+  .navg #prev { border-radius: 10px 0 0 10px; }
+  .navg #next { border-radius: 0 10px 10px 0; }
+  .navg .btn + .btn { margin-left: -1px; }
+  #today { min-width: 3em; padding-inline: 8px; }
+  #prev, #next { font-size: 1rem; padding: 7px 10px; }
+  #goto { width: 40px; height: 36px; }
+  #btn-rot, #btn-new-m { flex: none; width: 40px; height: 36px; padding: 0 !important; line-height: 1; }
+  #btn-new-m { display: inline-block; font-size: 1.7rem; font-weight: 700; }
+  #btn-rot { display: inline-block; font-size: 1.2rem !important; }
+  .range { flex: 1 1 100%; }
+  .sync { position: absolute; right: 2px; bottom: 0; }
+  /* heures : colonne figée et étroite */
+  .grid { grid-template-columns: var(--lw, 46px) repeat(var(--n), minmax(0, 1fr)); min-width: calc(var(--lw, 46px) + var(--n) * var(--cw, 150px)); }
+  .hours { position: sticky; left: 0; z-index: 9; background: var(--surface); border-right: 1px solid var(--line); }
+  .hours span { font-size: 0.78rem; right: 4px; }
+  .gh:first-child { left: 0; z-index: 12; }
+  .adl { left: 0; z-index: 11; }
+  /* jour en lettres et numéro : même ligne, centrés */
+  .gh, .grid.day .gh { display: flex !important; flex-direction: row; align-items: center; justify-content: center; gap: 6px; padding: 5px 2px; font-size: 0.9rem; font-weight: 500; line-height: 1; white-space: nowrap; overflow: hidden; }
+  .gh b, .gh.today b { display: inline-grid; place-items: center; width: 28px; height: 28px; margin: 0; font-size: 1.05rem; line-height: 1; }
+  .gh:not(.today) b { width: auto; min-width: 22px; }
+  /* formulaire */
+  .f-prev { display: none; }
+  #form-ev .row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  #form-ev .row input { padding: 6px 3px; font-size: 0.8rem; min-width: 0; }
+  #form-ev .row input::-webkit-calendar-picker-indicator { display: none; }
+  #form-ev .row .field > label { font-size: 0.65rem; letter-spacing: 0.02em; }
+  #form-ev .actions { flex-wrap: wrap; }
+  #form-ev .actions .btn, #form-p .actions .btn { flex: none; font-size: 0.9rem; padding: 8px 12px; }
+}
+@media (max-width: 700px), (max-height: 520px) { .adl { font-size: 0.62rem; padding-inline: 2px; text-align: center; } }

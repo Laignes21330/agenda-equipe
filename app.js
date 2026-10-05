@@ -1,6 +1,10 @@
 (function () {
   var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var HH = 60, HMIN = 30, HMAX = 150, H0 = 7, H1 = 24, TOP = 10, LEFT = 64;
+  var HH = 60, HMIN = 24, HMAX = 260, CW = 150, CMIN = 40, CMAX = 420, H0 = 7, H1 = 24, TOP = 10;
+  /* mode téléphone : écran étroit ou peu haut (paysage) */
+  var phoneMq = window.matchMedia ? window.matchMedia('(max-width: 700px), (max-height: 520px)') : { matches: false };
+  function phone() { return phoneMq.matches; }
+  function lw() { return phone() ? 46 : 64; }
   var COLORS = window.AGENDA_COLORS;
   var $ = function (id) { return document.getElementById(id); };
   var pad = function (n) { return (n < 10 ? '0' : '') + n; };
@@ -155,10 +159,10 @@
     if (view === 'day') $('range').textContent = fmt(days[0], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     else $('range').textContent = fmt(days[0], { day: 'numeric', month: 'short' }) + ' – ' + fmt(days[6], { day: 'numeric', month: 'short', year: 'numeric' });
     var span = H1 - H0, today = ds(new Date()), g = $('grid');
-    var colW = Math.max(150, ($('scroller').clientWidth - LEFT) / days.length);
-    g.classList.toggle('day', view === 'day'); g.style.setProperty('--n', days.length); g.style.setProperty('--hh', HH + 'px'); g.style.setProperty('--span', span);
+    var colW = Math.max(CW, ($('scroller').clientWidth - lw()) / days.length);
+    g.classList.toggle('day', view === 'day'); g.style.setProperty('--n', days.length); g.style.setProperty('--hh', HH + 'px'); g.style.setProperty('--cw', CW + 'px'); g.style.setProperty('--lw', lw() + 'px'); g.style.setProperty('--span', span);
     var h = '<div class="gh"></div>';
-    days.forEach(function (x) { h += '<div class="gh' + (ds(x) === today ? ' today' : '') + '">' + fmt(x, { weekday: 'long' }) + '<b>' + x.getDate() + '</b></div>'; });
+    days.forEach(function (x) { h += '<div class="gh' + (ds(x) === today ? ' today' : '') + '">' + fmt(x, { weekday: colW < 62 ? 'narrow' : (colW < 118 ? 'short' : 'long') }) + '<b>' + x.getDate() + '</b></div>'; });
     h += '<div class="adl">Journée</div>';
     days.forEach(function (x) {
       var key = ds(x);
@@ -204,7 +208,8 @@
     }
   }
   /* ----- Flèches « rendez-vous plus haut / plus bas » ----- */
-  function updateMore() {
+  function updateMore() { try { updateMore0(); } catch (x) {} }
+  function updateMore0() {
     var sc = $('scroller'), up = $('more-up'), dn = $('more-dn'); if (!up || !dn) return;
     var sr = sc.getBoundingClientRect(), vTop = sr.top, vBot = sr.bottom;
     Array.prototype.forEach.call(document.querySelectorAll('#grid .adl, #grid .ad'), function (c) { vTop = Math.max(vTop, c.getBoundingClientRect().bottom); });
@@ -221,6 +226,12 @@
     if (below.length) { dn.textContent = '▼ ' + below[0].el.getAttribute('data-s') + (below.length > 1 ? ' (' + below.length + ')' : ''); dn._t = below[0].el; }
     up._v = vTop; dn._v = vTop;
   }
+  /* les flèches sont créées ici si la page ne les contient pas encore */
+  ['more-up', 'more-dn'].forEach(function (id) {
+    if ($(id)) return;
+    var el = document.createElement('button'); el.type = 'button'; el.id = id; el.hidden = true; el.className = 'more ' + (id === 'more-up' ? 'up' : 'dn');
+    $('scroller').parentNode.appendChild(el);
+  });
   ['more-up', 'more-dn'].forEach(function (id) {
     var b = $(id); if (!b) return;
     b.onclick = function () {
@@ -230,34 +241,46 @@
   });
   $('scroller').addEventListener('scroll', updateMore, { passive: true });
 
-  /* ----- Zoom (pincer au doigt, Ctrl + molette) limité au planning : change la hauteur des heures ----- */
-  try { var sv = +localStorage.getItem('agenda.hh'); if (sv >= HMIN && sv <= HMAX) HH = sv; } catch (x) {}
+  /* ----- Zoom (pincer au doigt, Ctrl + molette) limité au planning ----- */
+  /* pincement vertical : hauteur des heures ; horizontal : largeur des colonnes ; en diagonale : les deux */
+  try {
+    var sv = +localStorage.getItem('agenda.hh'); if (sv >= HMIN && sv <= HMAX) HH = sv;
+    var sw2 = +localStorage.getItem('agenda.cw'); if (sw2 >= CMIN && sw2 <= CMAX) CW = sw2;
+  } catch (x) {}
   var pinching = false;
-  function zoomTo(nh, cy) {
-    nh = Math.max(HMIN, Math.min(HMAX, Math.round(nh)));
-    if (nh === HH) return;
-    var sc = $('scroller'), col = sc.querySelector('.col'), u = 0;
-    if (col) u = (cy - col.getBoundingClientRect().top - TOP) / HH;
-    HH = nh; try { localStorage.setItem('agenda.hh', String(HH)); } catch (x) {}
+  function zoomTo(nh, ncw, cx, cy) {
+    nh = Math.max(HMIN, Math.min(HMAX, Math.round(nh))); ncw = Math.max(CMIN, Math.min(CMAX, Math.round(ncw)));
+    if (nh === HH && ncw === CW) return;
+    var sc = $('scroller'), sr = sc.getBoundingClientRect(), col = sc.querySelector('.col'), uy = 0, ux = 0, w1 = 1;
+    if (col) { uy = (cy - col.getBoundingClientRect().top - TOP) / HH; w1 = col.offsetWidth || 1; ux = (sc.scrollLeft + cx - sr.left - lw()) / w1; }
+    HH = nh; CW = ncw;
+    try { localStorage.setItem('agenda.hh', String(HH)); localStorage.setItem('agenda.cw', String(CW)); } catch (x) {}
     render();
     col = sc.querySelector('.col');
-    if (col) sc.scrollTop += col.getBoundingClientRect().top - (cy - (u * HH + TOP));
+    if (col) {
+      sc.scrollTop += col.getBoundingClientRect().top - (cy - (uy * HH + TOP));
+      sc.scrollLeft = Math.max(0, ux * (col.offsetWidth || 1) + lw() - (cx - sr.left));
+    }
     updateMore();
   }
   (function () {
     var sc = $('scroller'), p0 = null, raf = 0, last = null;
     function dist(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
     sc.addEventListener('touchstart', function (e) {
-      if (e.touches.length === 2) { p0 = { d: dist(e.touches), h: HH }; pinching = true; }
+      if (e.touches.length === 2) {
+        var dx = Math.abs(e.touches[0].clientX - e.touches[1].clientX), dy = Math.abs(e.touches[0].clientY - e.touches[1].clientY);
+        p0 = { d: Math.max(dist(e.touches), 20), h: HH, c: CW, mode: dy > 2 * dx ? 'y' : (dx > 2 * dy ? 'x' : 'xy') }; pinching = true;
+      }
     }, { passive: true });
     sc.addEventListener('touchmove', function (e) {
       if (!p0 || e.touches.length !== 2) return;
       e.preventDefault();
-      last = { h: p0.h * dist(e.touches) / p0.d, cy: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
-      if (!raf) raf = requestAnimationFrame(function () { raf = 0; if (last) zoomTo(last.h, last.cy); });
+      var r = Math.pow(dist(e.touches) / p0.d, 1.6);   /* amplifié : un petit écart suffit */
+      last = { h: p0.mode === 'x' ? p0.h : p0.h * r, c: p0.mode === 'y' ? p0.c : p0.c * r, cx: (e.touches[0].clientX + e.touches[1].clientX) / 2, cy: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
+      if (!raf) raf = requestAnimationFrame(function () { raf = 0; if (last) zoomTo(last.h, last.c, last.cx, last.cy); });
     }, { passive: false });
     sc.addEventListener('touchend', function (e) { if (e.touches.length < 2) { p0 = null; setTimeout(function () { pinching = false; }, 300); } }, { passive: true });
-    sc.addEventListener('wheel', function (e) { if (!e.ctrlKey) return; e.preventDefault(); zoomTo(HH * (e.deltaY < 0 ? 1.1 : 0.91), e.clientY); }, { passive: false });
+    sc.addEventListener('wheel', function (e) { if (!e.ctrlKey) return; e.preventDefault(); zoomTo(HH * (e.deltaY < 0 ? 1.1 : 0.91), CW, e.clientX, e.clientY); }, { passive: false });
   })();
 
   /* Le planning occupe la hauteur de l'écran et défile à l'intérieur : l'entête (jours + journée entière) reste figée. */
@@ -285,7 +308,9 @@
     }, { passive: true });
   })();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
-  if (window.ResizeObserver) new ResizeObserver(fit).observe($('grid'));
+  if (window.ResizeObserver) { var ro = new ResizeObserver(function () { fit(); updateMore(); }); ro.observe($('grid')); ro.observe($('scroller')); }
+  window.addEventListener('orientationchange', function () { setTimeout(function () { fit(); render(); updateMore(); }, 250); });
+  window.setInterval(updateMore, 1500);
 
   /* Bouton d'orientation : verrouille le paysage (plein écran) ou revient au portrait, quand le navigateur le permet */
   (function () {
@@ -358,10 +383,27 @@
     $('f-notes').value = ev ? ev.notes : '';
     $('ev-err').textContent = '';
     $('ev-del').hidden = !ev; $('ev-del').textContent = 'Supprimer'; $('ev-del').dataset.arm = '';
-    syncAllDay(); updatePreview(); $('veil-ev').hidden = false; $('f-title').focus();
+    syncAllDay(); updatePreview(); $('veil-ev').hidden = false;
+    /* sur téléphone, un rendez-vous existant s'ouvre en consultation ; appuyer sur le bandeau noir passe en modification */
+    setEditable(!(ev && phone()), !!ev);
+    $('veil-ev').scrollTop = 0;
+    if (!(ev && phone())) $('f-title').focus();
   }
+  function setEditable(on, existing) {
+    var f = $('form-ev'), h = $('ev-h');
+    Array.prototype.forEach.call(f.querySelectorAll('input, textarea'), function (i) { i.disabled = !on; });
+    f.classList.toggle('ro', !on);
+    h.classList.toggle('pill', !!existing && phone());
+    h.classList.toggle('on', on);
+    h.setAttribute('role', !on ? 'button' : 'heading'); h.tabIndex = !on ? 0 : -1;
+    $('ev-save').hidden = !on; $('ev-del').hidden = !(on && existing);
+  }
+  function unlockEv() { if ($('form-ev').classList.contains('ro')) { setEditable(true, true); } }
+  $('ev-h').onclick = unlockEv;
+  $('ev-h').onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); unlockEv(); } };
   function closeEv() { $('veil-ev').hidden = true; }
   $('btn-new').onclick = function () { openEv(null); };
+  $('btn-new-m').onclick = function () { openEv(null); };
   $('ev-cancel').onclick = closeEv;
   $('parts').onchange = updatePreview;
   $('f-evt').onchange = updatePreview;
@@ -391,6 +433,7 @@
     else if (!ad && (!s || !en)) err = 'Indiquez l\'heure de début et l\'heure de fin.';
     else if (!ad && mins(en) <= mins(s)) err = 'L\'heure de fin doit être après l\'heure de début.';
     $('ev-err').textContent = err; if (err) return;
+    if (editing && phone() && !confirm('Voulez-vous sauvegarder les modifications ?')) return;
     var rec = { id: editing, parts: ids, title: t, date: dt, allDay: ad, endDate: ad ? d2 : '', start: ad ? '' : s, end: ad ? '' : en, location: $('f-loc').value.trim(), notes: $('f-notes').value.trim() };
     /* affichage immédiat, envoi au service en arrière-plan */
     var tmp = Object.assign({}, rec, { pending: true }), tmpId = rec.id || ('tmp-' + Date.now());
@@ -423,6 +466,16 @@
   function renderTeam() { $('team').innerHTML = users.map(function (u) { return '<div style="--c:' + u.c + '"><span class="dot">' + esc(u.ini) + '</span><span>' + esc(u.name) + '</span></div>'; }).join(''); }
   $('btn-person').onclick = function () { renderTeam(); $('p-err').textContent = ''; $('p-name').value = ''; $('p-ini').value = ''; $('veil-p').hidden = false; $('p-name').focus(); };
   $('p-close').onclick = function () { $('veil-p').hidden = true; };
+  $('p-out').onclick = function () { $('veil-p').hidden = true; store.signOut().then(gate); };
+  /* appui long sur le blason : équipe */
+  (function () {
+    var b = $('blason'), tm = 0;
+    function stop() { clearTimeout(tm); tm = 0; }
+    b.addEventListener('pointerdown', function () { stop(); tm = setTimeout(function () { tm = 0; $('btn-person').onclick(); }, 600); });
+    ['pointerup', 'pointerleave', 'pointercancel', 'pointermove'].forEach(function (n) { b.addEventListener(n, stop); });
+    b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    b.addEventListener('dragstart', function (e) { e.preventDefault(); });
+  })();
   $('form-p').onsubmit = function (e) {
     e.preventDefault();
     var name = $('p-name').value.trim(), ini = $('p-ini').value.trim().toUpperCase(), err = '';
@@ -453,7 +506,7 @@
   /* Démarrage et connexion */
   function enter() {
     $('login').hidden = true; $('main').hidden = false;
-    $('btn-out').hidden = store.mode !== 'script';
+    $('btn-out').hidden = store.mode !== 'script'; $('p-out').hidden = store.mode !== 'script';
     $('status').textContent = store.mode === 'script' ? 'Commune de Laignes' : 'Mode démo · données gardées dans ce navigateur';
     var g = ++gen; loading++; busy();
     return run(Promise.all([store.loadUsers(), fetchWin(range())])).then(function (res) {
@@ -464,7 +517,7 @@
   }
   function gate() {
     win = null; events = [];
-    $('main').hidden = true; $('login').hidden = false; $('btn-out').hidden = true; $('status').textContent = 'Non connecté';
+    $('main').hidden = true; $('login').hidden = false; $('btn-out').hidden = true; $('p-out').hidden = true; $('status').textContent = 'Non connecté';
   }
   $('form-in').onsubmit = function (e) {
     e.preventDefault(); $('in-err').textContent = '';
